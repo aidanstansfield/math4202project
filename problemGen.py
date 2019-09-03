@@ -7,7 +7,6 @@ Created on Thu Aug 22 16:08:57 2019
 from collections import defaultdict
 from random import randrange, choice
 
-# changes
 # For dis[playing the generated networks
 # If using the anaconda python environment (as recomended by gurobi) run:
 #    conda install -c anaconda networkx
