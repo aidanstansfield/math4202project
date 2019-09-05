@@ -173,7 +173,7 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
 
                 edgesMade += 1
         
-        generateProbabilities(lowProb)
+        # generateProbabilities(lowProb)
     return graph
 
 sparseInstance = generateNetwork(24, 18)
