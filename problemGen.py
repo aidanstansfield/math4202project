@@ -143,13 +143,16 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
             #     visited.append(nextNode)
 
             # prevNode = nextNode
-        print(len(visited))
-        print("edges to add:", a - len(visited)-1)
         numEdges = len(visited) - 1
-        while numEdges < a:
-            print(numEdges)
-            numEdges += 1
-
+        # while numEdges < a:
+        #     node = choice(list(graph.keys()))
+        #     neighbourInGraph = any([n in graph for n in gridNeighbours(node)])
+        #     if len(graph[node]) < 4 and neighbourInGraph:
+        #         print([i in list(gridNeighbours(node)) if i in graph])
+        #         # graph[node].append()
+        #         # graph[v].append(currentNode)
+        #         numEdges += 1
+            
         # Add edges until number off edges is a
         # If a new node is needed to do this, remove a leaf node, 
         # then add the node required
