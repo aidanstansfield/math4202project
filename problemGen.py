@@ -144,6 +144,15 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
 
             # prevNode = nextNode
         numEdges = len(visited) - 1
+        print(numEdges)
+        for i in graph.keys():
+            for j in gridNeighbours(i):
+                if numEdges < a:
+                    if j in graph.keys() and j not in graph[i] and j is not None:
+                        graph[i].append(j)
+                        graph[j].append(i)
+                        numEdges += 1
+        print(numEdges)
         # while numEdges < a:
         #     node = choice(list(graph.keys()))
         #     neighbourInGraph = any([n in graph for n in gridNeighbours(node)])
