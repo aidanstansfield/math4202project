@@ -3,8 +3,8 @@ from problemGen import generateNetwork
 from collections import defaultdict
 from fractions import Fraction
 
-numEdges = 28
-numNodes = 12
+numEdges = 19
+numNodes = 15
 K = 1
 maxTime = 50
 
@@ -26,7 +26,7 @@ for node in graph:
 
 mygraph = {}
 for node in graph:
-    mygraph[transition[node]] = [transition[x[0]] for x in graph[node]]
+    mygraph[transition[node]] = [transition[x] for x in graph[node]]
 
 p = {}
 for m in M:
