@@ -107,13 +107,13 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
 
     # The network / graph is rperesented with nodes as keys,
     # and the nodes they connect to as values (edges are pairs of nodes)
-    graph = defaultdict(list)
+    graph = defaultdict(set)
     if a/b < 2:
 
         # TODO - Finish this
         # Sparse network - like a manhattan network
         start = randint(0, GRID_SIZE**2 - 1)
-        graph[start] = []
+        graph[start] = set()
         # prevNode = start
         visited = [start]  # Nodes visited already
         queue = [start]  # Nodes to visit
@@ -131,15 +131,15 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
                 if len(visited) >= b:
                     break
                 if v not in visited:
-                    graph[currentNode].append(v)
-                    graph[v].append(currentNode)
+                    graph[currentNode].add(v)
+                    graph[v].add(currentNode)
                     visited.append(v)
                     queue.append(v)
 
             # nextNode = validNeighbours
             # if nextNode not in visited:
-            #     graph[prevNode].append(nextNode)
-            #     graph[nextNode].append(prevNode)
+            #     graph[prevNode].add(nextNode)
+            #     graph[nextNode].add(prevNode)
             #     visited.append(nextNode)
 
             # prevNode = nextNode
@@ -149,8 +149,8 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
         #     neighbourInGraph = any([n in graph for n in gridNeighbours(node)])
         #     if len(graph[node]) < 4 and neighbourInGraph:
         #         print([i in list(gridNeighbours(node)) if i in graph])
-        #         # graph[node].append()
-        #         # graph[v].append(currentNode)
+        #         # graph[node].add()
+        #         # graph[v].add(currentNode)
         #         numEdges += 1
             
         # Add edges until number off edges is a
@@ -162,13 +162,12 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
         # print(leafNodes)
 
     else:
-        test = nx.Graph()
         # Dense network
         for i in range(b):
-            graph[b] = []
+            graph[b] = set()
         edgesMade = 0
 
-        floorHalf = a//2 #The floor of half the edges
+        floorHalf = a//2  # The floor of half the edges
         # sum of the edges of each type must equal a
         # If floorHalf is an odd number, we need to add 1 to it to satisfy this
         if floorHalf % 2 == 1:
@@ -187,17 +186,16 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
 
             prob = round((nodeType+1)*0.2, 2)
 
-            if node2 not in graph[node1]:
-                val = (node2, prob)
-                graph[node1].append(val)
-                if node1 not in graph[node2]:
-                    val = (node1, prob)
-                    graph[node2].append(val)
+            if node2 not in graph[node1] or node1 not in graph[node2]:
+                graph[node1].add((node2, prob))
+                graph[node2].add((node1, prob))
+
                 edgesMade += 1
     return graph
 
 sparseInstance = generateNetwork(24, 18)
 denseInstance = generateNetwork(28, 12)
+print(sparseInstance)
 
 displayLattice(graph=sparseInstance)
 
@@ -209,13 +207,14 @@ while not nx.is_connected(dense):
     dense = nx.Graph(denseInstance)
 
 # print(nx.to_dict_of_lists(dense))
-# print(denseInstance)
+
 fig, (ax1, ax2) = plot.subplots(1, 2)
 
 ax1.set_title('Dense')
 ax1.set_axis_off()
-nx.draw_networkx(dense, ax=ax1)
-
+pos = nx.spring_layout(dense)
+print(dense.nodes)
+nx.draw_networkx(dense, pos, ax=ax1, labels={n: n for n in dense.nodes()})
 ax2.set_title('Sparse')
 ax2.set_xlim(-1, 10)
 ax2.set_ylim(-1, 10)
