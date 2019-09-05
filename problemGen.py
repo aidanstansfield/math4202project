@@ -5,7 +5,8 @@ Created on Thu Aug 22 16:08:57 2019
 @author: Daniel
 """
 from collections import defaultdict
-from random import randrange, choice
+from random import randint, choice, seed
+
 
 # For displaying the generated networks
 # If using the anaconda python environment (as recomended by gurobi) run:
@@ -22,8 +23,8 @@ GRID_SIZE = 10
 
 def displayLattice(size=GRID_SIZE, graph=None):
     print('Sparse Network')
-    for i in range(size):
-        for j in range(size):
+    for i in range(size):  # Rows
+        for j in range(size):  # Columns
             # Index to a node
             index = j + i*size
             left = (j-1) + i*size
@@ -98,7 +99,9 @@ def indexToXY(index, size=GRID_SIZE):
 
 
 # Generate a network with the given number of edges and nodes
-def generateNetwork(edges, nodes):
+def generateNetwork(edges, nodes, initSeed=None, prob=None):
+    # Seed the RNG
+    seed(initSeed)
     a = edges
     b = nodes
 
@@ -109,74 +112,126 @@ def generateNetwork(edges, nodes):
 
         # TODO - Finish this
         # Sparse network - like a manhattan network
-        start = randrange(0, 99)
+        start = randint(0, GRID_SIZE**2 - 1)
         graph[start] = []
-        prevNode = start
-        visited = [start]
+        # prevNode = start
+        visited = [start]  # Nodes visited already
+        queue = [start]  # Nodes to visit
         # Make a-1 edges
-        while len(visited) < b:
+        while len(visited) < b and queue:  # Breadth first search
+            currentNode = queue.pop()
             # Generate a tuple of valid neighbour indexes
             # (if a value is on the end of the grid,
             # neighbours outside the grid are None)
             validNeighbours = tuple(
-                x for x in gridNeighbours(prevNode)
+                x for x in gridNeighbours(currentNode)
                 if x is not None
                 )
-            nextNode = choice(validNeighbours)
-            if nextNode not in visited:
-                graph[prevNode].append(nextNode)
-                graph[nextNode].append(prevNode)
-                visited.append(nextNode)
+            for v in validNeighbours:
+                if len(visited) >= b:
+                    break
+                if v not in visited:
+                    graph[currentNode].append(v)
+                    graph[v].append(currentNode)
+                    visited.append(v)
+                    queue.append(v)
 
-            prevNode = nextNode
-        print(len(visited))
-        print("edges to add:", a - len(visited)-1)
+            # nextNode = validNeighbours
+            # if nextNode not in visited:
+            #     graph[prevNode].append(nextNode)
+            #     graph[nextNode].append(prevNode)
+            #     visited.append(nextNode)
+
+            # prevNode = nextNode
+        numEdges = len(visited) - 1
+        print(numEdges)
+        for i in graph.keys():
+            for j in gridNeighbours(i):
+                if numEdges < a:
+                    if j in graph.keys() and j not in graph[i] and j is not None:
+                        graph[i].append(j)
+                        graph[j].append(i)
+                        numEdges += 1
+        print(numEdges)
+        # while numEdges < a:
+        #     node = choice(list(graph.keys()))
+        #     neighbourInGraph = any([n in graph for n in gridNeighbours(node)])
+        #     if len(graph[node]) < 4 and neighbourInGraph:
+        #         print([i in list(gridNeighbours(node)) if i in graph])
+        #         # graph[node].append()
+        #         # graph[v].append(currentNode)
+        #         numEdges += 1
+            
         # Add edges until number off edges is a
-        # If a new node is needed to do this, remove a leaf node, then add the node required
-        print([k for i in graph for k in gridNeighbours(i) if k in graph])
-        leafNodes = [n for n in graph if len(graph[n]) == 1]
-        print(leafNodes)
+        # If a new node is needed to do this, remove a leaf node, 
+        # then add the node required
+
+        # print([k for i in graph for k in gridNeighbours(i) if k in graph])
+        # leafNodes = [n for n in graph if len(graph[n]) == 1]
+        # print(leafNodes)
 
     else:
+        test = nx.Graph()
         # Dense network
         for i in range(b):
             graph[b] = []
         edgesMade = 0
+
+        floorHalf = a//2 #The floor of half the edges
+        # sum of the edges of each type must equal a
+        # If floorHalf is an odd number, we need to add 1 to it to satisfy this
+        if floorHalf % 2 == 1:
+            floorHalf += 1
+        # Maximum number of each edge type (low, medium, high)
+        maxEdgeTypes = (floorHalf//2, floorHalf, floorHalf//2)
+        # Number of each type already generated
+        generatedTypes = [0, 0, 0]
+
         while edgesMade < a:
-            node1 = randrange(0, b+1)
-            node2 = randrange(0, b+1)
+            node1 = randint(0, b)
+            node2 = randint(0, b)
+            nodeType = randint(0, 2)
+
+            generatedTypes[nodeType] += 1
+
+            prob = round((nodeType+1)*0.2, 2)
+
             if node2 not in graph[node1]:
-                graph[node1].append(node2)
+                val = (node2, prob)
+                graph[node1].append(val)
                 if node1 not in graph[node2]:
-                    graph[node2].append(node1)
+                    val = (node1, prob)
+                    graph[node2].append(val)
                 edgesMade += 1
     return graph
 
 if __name__ == "__main__":
     sparseInstance = generateNetwork(24, 18)
-    
-    denseInstance = generateNetwork(30, 12)
-    
+    denseInstance = generateNetwork(28, 12)
+
     displayLattice(graph=sparseInstance)
+
+
     dense = nx.Graph(denseInstance)
     # If the generated dense graph is disconnected, generate a new one
     while not nx.is_connected(dense):
         denseInstance = generateNetwork(30, 12)
+        
+        displayLattice(graph=sparseInstance)
         dense = nx.Graph(denseInstance)
-    
-    # print(dense.edges)
-    print(denseInstance)
-    print(nx.to_dict_of_lists(dense))
+
+    # print(nx.to_dict_of_lists(dense))
+    # print(denseInstance)
     fig, (ax1, ax2) = plot.subplots(1, 2)
-    
+
     ax1.set_title('Dense')
     ax1.set_axis_off()
     nx.draw_networkx(dense, ax=ax1)
-    
+
     ax2.set_title('Sparse')
     ax2.set_xlim(-1, 10)
     ax2.set_ylim(-1, 10)
-    
+
     for key in sparseInstance.keys():
         keyCoords = indexToXY(key)
         for node in sparseInstance[key]:
@@ -186,5 +241,5 @@ if __name__ == "__main__":
                 [keyCoords[1], nodeCoord[1]],
                 'b.-'
                 )
-    
+
     plot.show()
