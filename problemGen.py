@@ -22,7 +22,6 @@ GRID_SIZE = 10
 
 
 def displayLattice(size=GRID_SIZE, graph=None):
-    print('Sparse Network')
     for i in range(size):  # Rows
         for j in range(size):  # Columns
             # Index to a node
@@ -58,7 +57,6 @@ def displayLattice(size=GRID_SIZE, graph=None):
             print(dispChar, end='  ')
 
         print()
-    print('End Sparse Network')
 
 
 # Output of this can be put in here:
@@ -136,40 +134,16 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
                     visited.append(v)
                     queue.append(v)
 
-            # nextNode = validNeighbours
-            # if nextNode not in visited:
-            #     graph[prevNode].add(nextNode)
-            #     graph[nextNode].add(prevNode)
-            #     visited.append(nextNode)
-
-            # prevNode = nextNode
         numEdges = len(visited) - 1
         print(numEdges)
         for i in graph.keys():
             for j in gridNeighbours(i):
                 if numEdges < a:
                     if j in graph.keys() and j not in graph[i] and j is not None:
-                        graph[i].append(j)
-                        graph[j].append(i)
+                        graph[i].add(j)
+                        graph[j].add(i)
                         numEdges += 1
         print(numEdges)
-        # while numEdges < a:
-        #     node = choice(list(graph.keys()))
-        #     neighbourInGraph = any([n in graph for n in gridNeighbours(node)])
-        #     if len(graph[node]) < 4 and neighbourInGraph:
-        #         print([i in list(gridNeighbours(node)) if i in graph])
-        #         # graph[node].add()
-        #         # graph[v].add(currentNode)
-        #         numEdges += 1
-            
-        # Add edges until number off edges is a
-        # If a new node is needed to do this, remove a leaf node, 
-        # then add the node required
-
-        # print([k for i in graph for k in gridNeighbours(i) if k in graph])
-        # leafNodes = [n for n in graph if len(graph[n]) == 1]
-        # print(leafNodes)
-
     else:
         # Dense network
         for i in range(b):
@@ -204,7 +178,6 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
 
 sparseInstance = generateNetwork(24, 18)
 denseInstance = generateNetwork(28, 12)
-print(sparseInstance)
 
 displayLattice(graph=sparseInstance)
 
@@ -222,7 +195,7 @@ fig, (ax1, ax2) = plot.subplots(1, 2)
 ax1.set_title('Dense')
 ax1.set_axis_off()
 pos = nx.spring_layout(dense)
-print(dense.nodes)
+# print(dense.nodes)
 nx.draw_networkx(dense, pos, ax=ax1, labels={n: n for n in dense.nodes()})
 ax2.set_title('Sparse')
 ax2.set_xlim(-1, 10)
