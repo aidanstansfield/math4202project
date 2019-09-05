@@ -174,12 +174,12 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
             generatedTypes[nodeType] += 1
 
             prob = round((nodeType+1)*0.2, 2)
-
-            if node2 not in graph[node1] or node1 not in graph[node2]:
+            
+            if node2 not in graph[node1] and node1 not in graph[node2]:
                 graph[node1].add(node2)
                 graph[node2].add(node1)
                 edgesMade += 1
-        
+        print(edgesMade)
     edgeProbs = generateProbabilities(graph, lowProb)
     return graph
 
@@ -192,7 +192,7 @@ displayLattice(graph=sparseInstance)
 dense = nx.Graph(denseInstance)
 # If the generated dense graph is disconnected, generate a new one
 while not nx.is_connected(dense):
-    denseInstance = generateNetwork(30, 12)
+    denseInstance = generateNetwork(28, 12)
     dense = nx.Graph(denseInstance)
 
 # print(nx.to_dict_of_lists(dense))
