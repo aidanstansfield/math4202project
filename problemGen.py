@@ -166,6 +166,9 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
         while edgesMade < a:
             node1 = randint(1, b)
             node2 = randint(1, b)
+            while node2 == node1:
+                node2 = randint(1, b)
+            
             nodeType = randint(0, 2)
 
             generatedTypes[nodeType] += 1
@@ -175,10 +178,9 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
             if node2 not in graph[node1] or node1 not in graph[node2]:
                 graph[node1].add(node2)
                 graph[node2].add(node1)
-
                 edgesMade += 1
         
-        generateProbabilities(graph, lowProb)
+    edgeProbs = generateProbabilities(graph, lowProb)
     return graph
 
 sparseInstance = generateNetwork(24, 18)
