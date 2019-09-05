@@ -97,7 +97,7 @@ def indexToXY(index, size=GRID_SIZE):
 
 
 # Generate a network with the given number of edges and nodes
-def generateNetwork(edges, nodes, initSeed=None, prob=None):
+def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
     # Seed the RNG
     seed(initSeed)
     a = edges
@@ -135,7 +135,6 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
                     queue.append(v)
 
         numEdges = len(visited) - 1
-        print(numEdges)
         for i in graph.keys():
             for j in gridNeighbours(i):
                 if numEdges < a:
@@ -143,7 +142,6 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
                         graph[i].add(j)
                         graph[j].add(i)
                         numEdges += 1
-        print(numEdges)
     else:
         # Dense network
         for i in range(b):
@@ -170,10 +168,12 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
             prob = round((nodeType+1)*0.2, 2)
 
             if node2 not in graph[node1] or node1 not in graph[node2]:
-                graph[node1].add((node2, prob))
-                graph[node2].add((node1, prob))
+                graph[node1].add(node2)
+                graph[node2].add(node1)
 
                 edgesMade += 1
+        
+        generateProbabilities(lowProb)
     return graph
 
 sparseInstance = generateNetwork(24, 18)
@@ -195,7 +195,8 @@ fig, (ax1, ax2) = plot.subplots(1, 2)
 ax1.set_title('Dense')
 ax1.set_axis_off()
 pos = nx.spring_layout(dense)
-# print(dense.nodes)
+
+print(dense.nodes)
 nx.draw_networkx(dense, pos, ax=ax1, labels={n: n for n in dense.nodes()})
 ax2.set_title('Sparse')
 ax2.set_xlim(-1, 10)
