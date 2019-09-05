@@ -22,7 +22,6 @@ GRID_SIZE = 10
 
 
 def displayLattice(size=GRID_SIZE, graph=None):
-    print('Sparse Network')
     for i in range(size):  # Rows
         for j in range(size):  # Columns
             # Index to a node
@@ -58,7 +57,6 @@ def displayLattice(size=GRID_SIZE, graph=None):
             print(dispChar, end='  ')
 
         print()
-    print('End Sparse Network')
 
 
 # Output of this can be put in here:
@@ -99,7 +97,7 @@ def indexToXY(index, size=GRID_SIZE):
 
 
 # Generate a network with the given number of edges and nodes
-def generateNetwork(edges, nodes, initSeed=None, prob=None):
+def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
     # Seed the RNG
     seed(initSeed)
     a = edges
@@ -107,13 +105,13 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
 
     # The network / graph is rperesented with nodes as keys,
     # and the nodes they connect to as values (edges are pairs of nodes)
-    graph = defaultdict(list)
+    graph = defaultdict(set)
     if a/b < 2:
 
         # TODO - Finish this
         # Sparse network - like a manhattan network
         start = randint(0, GRID_SIZE**2 - 1)
-        graph[start] = []
+        graph[start] = set()
         # prevNode = start
         visited = [start]  # Nodes visited already
         queue = [start]  # Nodes to visit
@@ -131,53 +129,26 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
                 if len(visited) >= b:
                     break
                 if v not in visited:
-                    graph[currentNode].append(v)
-                    graph[v].append(currentNode)
+                    graph[currentNode].add(v)
+                    graph[v].add(currentNode)
                     visited.append(v)
                     queue.append(v)
 
-            # nextNode = validNeighbours
-            # if nextNode not in visited:
-            #     graph[prevNode].append(nextNode)
-            #     graph[nextNode].append(prevNode)
-            #     visited.append(nextNode)
-
-            # prevNode = nextNode
         numEdges = len(visited) - 1
-        print(numEdges)
         for i in graph.keys():
             for j in gridNeighbours(i):
                 if numEdges < a:
                     if j in graph.keys() and j not in graph[i] and j is not None:
-                        graph[i].append(j)
-                        graph[j].append(i)
+                        graph[i].add(j)
+                        graph[j].add(i)
                         numEdges += 1
-        print(numEdges)
-        # while numEdges < a:
-        #     node = choice(list(graph.keys()))
-        #     neighbourInGraph = any([n in graph for n in gridNeighbours(node)])
-        #     if len(graph[node]) < 4 and neighbourInGraph:
-        #         print([i in list(gridNeighbours(node)) if i in graph])
-        #         # graph[node].append()
-        #         # graph[v].append(currentNode)
-        #         numEdges += 1
-            
-        # Add edges until number off edges is a
-        # If a new node is needed to do this, remove a leaf node, 
-        # then add the node required
-
-        # print([k for i in graph for k in gridNeighbours(i) if k in graph])
-        # leafNodes = [n for n in graph if len(graph[n]) == 1]
-        # print(leafNodes)
-
     else:
-        test = nx.Graph()
         # Dense network
         for i in range(b):
-            graph[b] = []
+            graph[b] = set()
         edgesMade = 0
 
-        floorHalf = a//2 #The floor of half the edges
+        floorHalf = a//2  # The floor of half the edges
         # sum of the edges of each type must equal a
         # If floorHalf is an odd number, we need to add 1 to it to satisfy this
         if floorHalf % 2 == 1:
@@ -196,13 +167,13 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
 
             prob = round((nodeType+1)*0.2, 2)
 
-            if node2 not in graph[node1]:
-                val = (node2, prob)
-                graph[node1].append(val)
-                if node1 not in graph[node2]:
-                    val = (node1, prob)
-                    graph[node2].append(val)
+            if node2 not in graph[node1] or node1 not in graph[node2]:
+                graph[node1].add(node2)
+                graph[node2].add(node1)
+
                 edgesMade += 1
+        
+        # generateProbabilities(lowProb)
     return graph
 
 if __name__ == "__main__":
