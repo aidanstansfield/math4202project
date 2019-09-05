@@ -96,6 +96,14 @@ def indexToXY(index, size=GRID_SIZE):
     return (x, y)
 
 
+def generateProbabilities(graph, prob):
+    numEdges = sum(len(graph[n]) for n in graph.keys())/2
+    print(numEdges)
+    if prob is None:
+        # Uniform
+        pass
+        
+
 # Generate a network with the given number of edges and nodes
 def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
     # Seed the RNG
@@ -107,12 +115,9 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
     # and the nodes they connect to as values (edges are pairs of nodes)
     graph = defaultdict(set)
     if a/b < 2:
-
-        # TODO - Finish this
         # Sparse network - like a manhattan network
         start = randint(0, GRID_SIZE**2 - 1)
         graph[start] = set()
-        # prevNode = start
         visited = [start]  # Nodes visited already
         queue = [start]  # Nodes to visit
         # Make a-1 edges
@@ -159,8 +164,8 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
         generatedTypes = [0, 0, 0]
 
         while edgesMade < a:
-            node1 = randint(0, b)
-            node2 = randint(0, b)
+            node1 = randint(1, b)
+            node2 = randint(1, b)
             nodeType = randint(0, 2)
 
             generatedTypes[nodeType] += 1
@@ -173,7 +178,7 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
 
                 edgesMade += 1
         
-        # generateProbabilities(lowProb)
+        generateProbabilities(graph, lowProb)
     return graph
 
 sparseInstance = generateNetwork(24, 18)
