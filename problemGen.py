@@ -7,7 +7,7 @@ Created on Thu Aug 22 16:08:57 2019
 from collections import defaultdict
 from random import randrange, choice
 
-# For dis[playing the generated networks
+# For displaying the generated networks
 # If using the anaconda python environment (as recomended by gurobi) run:
 #    conda install -c anaconda networkx
 import networkx as nx
@@ -117,7 +117,7 @@ def generateNetwork(edges, nodes):
         while len(visited) < b:
             # Generate a tuple of valid neighbour indexes
             # (if a value is on the end of the grid,
-            # neightbours outside the grid are None)
+            # neighbours outside the grid are None)
             validNeighbours = tuple(
                 x for x in gridNeighbours(prevNode)
                 if x is not None
@@ -152,38 +152,39 @@ def generateNetwork(edges, nodes):
                 edgesMade += 1
     return graph
 
-sparseInstance = generateNetwork(24, 18)
-
-denseInstance = generateNetwork(30, 12)
-
-displayLattice(graph=sparseInstance)
-dense = nx.Graph(denseInstance)
-# If the generated dense graph is disconnected, generate a new one
-while not nx.is_connected(dense):
+if __name__ == "__main__":
+    sparseInstance = generateNetwork(24, 18)
+    
     denseInstance = generateNetwork(30, 12)
+    
+    displayLattice(graph=sparseInstance)
     dense = nx.Graph(denseInstance)
-
-# print(dense.edges)
-print(denseInstance)
-print(nx.to_dict_of_lists(dense))
-fig, (ax1, ax2) = plot.subplots(1, 2)
-
-ax1.set_title('Dense')
-ax1.set_axis_off()
-nx.draw_networkx(dense, ax=ax1)
-
-ax2.set_title('Sparse')
-ax2.set_xlim(-1, 10)
-ax2.set_ylim(-1, 10)
-
-for key in sparseInstance.keys():
-    keyCoords = indexToXY(key)
-    for node in sparseInstance[key]:
-        nodeCoord = indexToXY(node)
-        ax2.plot(
-            [keyCoords[0], nodeCoord[0]],
-            [keyCoords[1], nodeCoord[1]],
-            'b.-'
-            )
-
-plot.show()
+    # If the generated dense graph is disconnected, generate a new one
+    while not nx.is_connected(dense):
+        denseInstance = generateNetwork(30, 12)
+        dense = nx.Graph(denseInstance)
+    
+    # print(dense.edges)
+    print(denseInstance)
+    print(nx.to_dict_of_lists(dense))
+    fig, (ax1, ax2) = plot.subplots(1, 2)
+    
+    ax1.set_title('Dense')
+    ax1.set_axis_off()
+    nx.draw_networkx(dense, ax=ax1)
+    
+    ax2.set_title('Sparse')
+    ax2.set_xlim(-1, 10)
+    ax2.set_ylim(-1, 10)
+    
+    for key in sparseInstance.keys():
+        keyCoords = indexToXY(key)
+        for node in sparseInstance[key]:
+            nodeCoord = indexToXY(node)
+            ax2.plot(
+                [keyCoords[0], nodeCoord[0]],
+                [keyCoords[1], nodeCoord[1]],
+                'b.-'
+                )
+    
+    plot.show()
