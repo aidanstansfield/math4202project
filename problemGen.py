@@ -204,88 +204,39 @@ def generateNetwork(edges, nodes, initSeed=None, prob=None):
                     graph[node2].append(val)
                 edgesMade += 1
     return graph
-def genArcs(graph):
-    arcs = []
-    for i in graph.keys():
-        for j in graph[i]:
-            if j is not None:
-                arcs.append((i, j))
-    return arcs
-def genEdges(graph):
-    edges = {}
-    e = 0
-    for i in graph.keys():
-        for j in graph[i]:
-            if (i, j) not in edges.values() and (j, i) not in edges.values():
-                edges[e] = (i, j)
-                e += 1
-    return edges
 
-def genNodes(graph):
-    nodes = []
-    for n in graph:
-        nodes.append(n)
-    return nodes
+sparseInstance = generateNetwork(24, 18)
+denseInstance = generateNetwork(28, 12)
 
-def arcStart(a, n):
-    if a[0] == n:
-        return 1
-    else:
-        return 0
-    
-def arcEnd(a, n):
-    if a[1] == n:
-        return 1
-    else:
-        return 0
-    
-def arcOnEdge(a, e):
-    if a[0] == e[0] and a[1] == e[1]:
-        return True
-    else:
-        return False
-#sparseInstance = generateNetwork(24, 18)
-#denseInstance = generateNetwork(28, 12)
-#displayLattice(graph=sparseInstance)
-#
-#
-#dense = nx.Graph(denseInstance)
-## If the generated dense graph is disconnected, generate a new one
-#while not nx.is_connected(dense):
-#    denseInstance = generateNetwork(30, 12)
-#    dense = nx.Graph(denseInstance)
-#
-## print(nx.to_dict_of_lists(dense))
-## print(denseInstance)
-#fig, (ax1, ax2) = plot.subplots(1, 2)
-#
-#ax1.set_title('Dense')
-#ax1.set_axis_off()
-#nx.draw_networkx(dense, ax=ax1)
-#
-#ax2.set_title('Sparse')
-#ax2.set_xlim(-1, 10)
-#ax2.set_ylim(-1, 10)
-#
-#for key in sparseInstance.keys():
-#    keyCoords = indexToXY(key)
-#    for node in sparseInstance[key]:
-#        nodeCoord = indexToXY(node)
-#        ax2.plot(
-#            [keyCoords[0], nodeCoord[0]],
-#            [keyCoords[1], nodeCoord[1]],
-#            'b.-'
-#            )
-#
-#plot.show()
-        
-#Generate Sparse Network
-sparse = generateNetwork(24, 18)
-#Sets
-Edges = genEdges(sparse)
-Arcs = genArcs(sparse)
-Nodes = genNodes(sparse)
-E = len(Edges)
-A = len(Arcs)
-N = len(Nodes)
-K = [1]
+displayLattice(graph=sparseInstance)
+
+
+dense = nx.Graph(denseInstance)
+# If the generated dense graph is disconnected, generate a new one
+while not nx.is_connected(dense):
+    denseInstance = generateNetwork(30, 12)
+    dense = nx.Graph(denseInstance)
+
+# print(nx.to_dict_of_lists(dense))
+# print(denseInstance)
+fig, (ax1, ax2) = plot.subplots(1, 2)
+
+ax1.set_title('Dense')
+ax1.set_axis_off()
+nx.draw_networkx(dense, ax=ax1)
+
+ax2.set_title('Sparse')
+ax2.set_xlim(-1, 10)
+ax2.set_ylim(-1, 10)
+
+for key in sparseInstance.keys():
+    keyCoords = indexToXY(key)
+    for node in sparseInstance[key]:
+        nodeCoord = indexToXY(node)
+        ax2.plot(
+            [keyCoords[0], nodeCoord[0]],
+            [keyCoords[1], nodeCoord[1]],
+            'b.-'
+            )
+
+plot.show()
