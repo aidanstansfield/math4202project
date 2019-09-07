@@ -189,7 +189,7 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
     return graph
 
 if __name__ == "__main__":
-    sparseInstance = generateNetwork(24, 18, 409633023)
+    sparseInstance = generateNetwork(24, 18)
     denseInstance = generateNetwork(28, 12)
 
     displayLattice(graph=sparseInstance)
