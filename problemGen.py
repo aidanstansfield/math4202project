@@ -5,9 +5,9 @@ Created on Thu Aug 22 16:08:57 2019
 @author: Daniel
 """
 from collections import defaultdict
-from random import randint, choice, seed
-
-
+from random import randint, choice, seed, randrange
+from datetime import datetime
+import sys
 # For displaying the generated networks
 # If using the anaconda python environment (as recomended by gurobi) run:
 #    conda install -c anaconda networkx
@@ -98,16 +98,20 @@ def indexToXY(index, size=GRID_SIZE):
 
 def generateProbabilities(graph, prob):
     numEdges = sum(len(graph[n]) for n in graph.keys())/2
-    print(numEdges)
     if prob is None:
         # Uniform
         pass
         
+def generateDense(edges, nodes, graph):
+    return graph
 
 # Generate a network with the given number of edges and nodes
 def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
+    if initSeed is None:
+        initSeed = randrange(sys.maxsize)
     # Seed the RNG
     seed(initSeed)
+    print("Network Class: M", edges, "N", nodes, " Seed:", initSeed, sep="")
     a = edges
     b = nodes
 
@@ -149,6 +153,8 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
                         numEdges += 1
     else:
         # Dense network
+        # graph = generateDense(a,b, graph)
+
         for i in range(b):
             graph[b] = set()
         edgesMade = 0
@@ -179,24 +185,20 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
                 graph[node1].add(node2)
                 graph[node2].add(node1)
                 edgesMade += 1
-        print(edgesMade)
     edgeProbs = generateProbabilities(graph, lowProb)
     return graph
 
 if __name__ == "__main__":
-    sparseInstance = generateNetwork(24, 18)
+    sparseInstance = generateNetwork(24, 18, 409633023)
     denseInstance = generateNetwork(28, 12)
 
     displayLattice(graph=sparseInstance)
-
 
     dense = nx.Graph(denseInstance)
 
     # If the generated dense graph is disconnected, generate a new one
     while not nx.is_connected(dense):
         denseInstance = generateNetwork(28, 12)
-        
-        displayLattice(graph=sparseInstance)
         dense = nx.Graph(denseInstance)
 
     # print(nx.to_dict_of_lists(dense))
