@@ -294,24 +294,24 @@ def genEdges(graph):
 #    else:
 #        return False
 
-    fig, (ax1, ax2) = plot.subplots(1, 2)
-
-    ax1.set_title('Dense')
-    ax1.set_axis_off()
-    nx.draw_networkx(dense, ax=ax1)
-
-    ax2.set_title('Sparse')
-    ax2.set_xlim(-1, 10)
-    ax2.set_ylim(-1, 10)
-
-    for key in sparseInstance.keys():
-        keyCoords = indexToXY(key)
-        for node in sparseInstance[key]:
-            nodeCoord = indexToXY(node)
-            ax2.plot(
-                [keyCoords[0], nodeCoord[0]],
-                [keyCoords[1], nodeCoord[1]],
-                'b.-'
-                )
-
-    plot.show()
+#    fig, (ax1, ax2) = plot.subplots(1, 2)
+#
+#    ax1.set_title('Dense')
+#    ax1.set_axis_off()
+#    nx.draw_networkx(dense, ax=ax1)
+#
+#    ax2.set_title('Sparse')
+#    ax2.set_xlim(-1, 10)
+#    ax2.set_ylim(-1, 10)
+#
+#    for key in sparseInstance.keys():
+#        keyCoords = indexToXY(key)
+#        for node in sparseInstance[key]:
+#            nodeCoord = indexToXY(node)
+#            ax2.plot(
+#                [keyCoords[0], nodeCoord[0]],
+#                [keyCoords[1], nodeCoord[1]],
+#                'b.-'
+#                )
+#
+#    plot.show()
