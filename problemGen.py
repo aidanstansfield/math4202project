@@ -96,16 +96,54 @@ def indexToXY(index, size=GRID_SIZE):
     return (x, y)
 
 
-def generateProbabilities(graph, prob):
+#def generateProbabilities(graph, prob):
+#    numEdges = sum(len(graph[n]) for n in graph.keys())/2
+#    print(numEdges)
+#    if prob is None:
+#        # Uniform
+#        pass
+    
+def genProbs(graph, probType):
+    pUn = None #uniform prob
+    pNon = None #non-uniform prob
+    #number of nodes
+    numNodes = sum(n for n in graph.keys())
+    #number of edges
     numEdges = sum(len(graph[n]) for n in graph.keys())/2
-    print(numEdges)
-    if prob is None:
-        # Uniform
-        pass
+    if not probType:
+        #gen uniformly dist. probs
+        pUn = round(1/numEdges, 2)
+        edgeNums = numEdges
+    elif probType:
+        #define number of edges st. Cl: Cm: Ch app = 1: 2: 1
+        edgeFloor = numEdges//4
+        edgeMod = numEdges % 4 #num edges mod 4
+        #we need to split the edges into groups approximately of the ratio
+        #1: 2: 1 (4 "pieces")- decide what to do with leftovers depending on 
+        #how many leftovers
+        edgeNums = []
+        if edgeMod == 0:
+            edgeNums = [edgefloor, 2 * edgefloor, edgefloor]
+        elif edgeMod <= 2:
+            edgeNums = [edgefloor, 2 * edgefloor + edgemod, edgefloor]
+        elif edgeMod  == 3:
+            edgeNums = [edgefloor + 1, 2 *edgefloor + 1, edgefloor + 1]
+        else:
+            print('Something Wrong')
+            return -1
+        #define list of probs of the form [pl, pm, ph]
+        p = 1/(edgeNums[0] + 2 * edgeNums[1] + 3 * edgeNums[2])
+        pNon = [p, 2 * p, 3 * p]
+        pNon = [round(p, 2) for p in pNon]
+    else:
+        print('Invalid Graph Type')
+        return -1
+    return pUn, pNon, edgeNums
+      
         
 
 # Generate a network with the given number of edges and nodes
-def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
+def generateNetwork(edges, nodes, probType, initSeed=None):
     # Seed the RNG
     seed(initSeed)
     a = edges
@@ -148,39 +186,72 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
                         graph[j].add(i)
                         numEdges += 1
     else:
-        # Dense network
+#        # Dense network
         for i in range(b):
             graph[b] = set()
         edgesMade = 0
-
-        floorHalf = a//2  # The floor of half the edges
-        # sum of the edges of each type must equal a
-        # If floorHalf is an odd number, we need to add 1 to it to satisfy this
-        if floorHalf % 2 == 1:
-            floorHalf += 1
-        # Maximum number of each edge type (low, medium, high)
-        maxEdgeTypes = (floorHalf//2, floorHalf, floorHalf//2)
-        # Number of each type already generated
-        generatedTypes = [0, 0, 0]
-
+        
         while edgesMade < a:
             node1 = randint(1, b)
             node2 = randint(1, b)
             while node2 == node1:
-                node2 = randint(1, b)
-            
-            nodeType = randint(0, 2)
-
-            generatedTypes[nodeType] += 1
-
-            prob = round((nodeType+1)*0.2, 2)
-            
+                node2= randint(1, b)
             if node2 not in graph[node1] and node1 not in graph[node2]:
                 graph[node1].add(node2)
                 graph[node2].add(node1)
                 edgesMade += 1
-        print(edgesMade)
-    edgeProbs = generateProbabilities(graph, lowProb)
+#            edgeType = randint(0, 2)
+#            while generatedTypes[edgeType] == edgeNums[edgeType]:
+#                edgeType = randint(0, 2)
+#            generatedTypes[edgeType] += 1
+            else:
+                pass
+    #assign probabilities to existing edges in graph
+    pUn, pNon, edgeNums = genProbs(graph, probType)
+    edges = genEdges(graph)
+    prob = {}
+    if pUn is not None:
+        #uniform case
+        prob[pUn] = [e for e in edges.values()]
+    else:
+        generatedTypes = [0, 0, 0]
+        for e in edges:
+            edgeType = randint(0, 2)
+            while generatedTypes[edgeType] == edgeNums[edgeType]:
+                edgeType = randint(0, 2)
+            prob[pNon[edgeType]].append(edges(e))
+            generatedTypes[edgeType] += 1
+            
+            
+        
+#
+#        floorHalf = a//2  # The floor of half the edges
+#        # sum of the edges of each type must equal a
+#        # If floorHalf is an odd number, we need to add 1 to it to satisfy this
+#        if floorHalf % 2 == 1:
+#            floorHalf += 1
+#        # Maximum number of each edge type (low, medium, high)
+#        maxEdgeTypes = (floorHalf//2, floorHalf, floorHalf//2)
+#        # Number of each type already generated
+#        generatedTypes = [0, 0, 0]
+#        
+#        while edgesMade < a:
+#            node1 = randint(1, b)
+#            node2 = randint(1, b)
+#            while node2 == node1:
+#                node2 = randint(1, b)
+#            
+#            nodeType = randint(0, 2)
+#
+#            generatedTypes[nodeType] += 1
+#
+#            prob = round((nodeType+1)*0.2, 2)
+#            
+#            if node2 not in graph[node1] and node1 not in graph[node2]:
+#                graph[node1].add(node2)
+#                graph[node2].add(node1)
+#                edgesMade += 1
+#        print(edgesMade)
     return graph
 #def genArcs(graph):
 #    arcs = []
@@ -189,15 +260,15 @@ def generateNetwork(edges, nodes, initSeed=None, lowProb=None):
 #            if j is not None:
 #                arcs.append((i, j))
 #    return arcs
-#def genEdges(graph):
-#    edges = {}
-#    e = 0
-#    for i in graph.keys():
-#        for j in graph[i]:
-#            if (i, j) not in edges.values() and (j, i) not in edges.values():
-#                edges[e] = (i, j)
-#                e += 1
-#    return edges
+def genEdges(graph):
+    edges = {}
+    e = 0
+    for i in graph.keys():
+        for j in graph[i]:
+            if (i, j) not in edges.values() and (j, i) not in edges.values():
+                edges[e] = (i, j)
+                e += 1
+    return edges
 #
 #def genNodes(graph):
 #    nodes = []
