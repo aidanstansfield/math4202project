@@ -1,91 +1,52 @@
 from gurobipy import *
-from problemGen import generateNetwork
+from problemGen import generateNetwork, genArcs, genNodes, S, E, O
 from collections import defaultdict
 from fractions import Fraction
 
 numEdges = 19
 numNodes = 15
 K = 1
-maxTime = 50
+maxTime = 100
 
-M = range(1, numEdges + 1)
-N = range(1, numNodes + 1)
-L = range(1, 2 * numEdges + 1)
-T = range(1, maxTime + 1)
+M = range(0, numEdges)
+N = range(0, numNodes)
+L = range(0, 2 * numEdges)
+T = range(0, maxTime)
 
 mip = Model("Model searchers searching for a randomly distributed immobile" \
     "target on a unit network")
 
-graph = generateNetwork(numEdges, numNodes)
+#sparse instance, uniform prob
+graph, pUn, edges = generateNetwork(numEdges, numNodes, 0)
+print('Prob: ', pUn)
+print('Edges: ', edges)
 
-count = 1
-transition = {}
-for node in graph:
-    transition[node] = count
-    count += 1
-
-mygraph = {}
-for node in graph:
-    mygraph[transition[node]] = [transition[x] for x in graph[node]]
-
-p = {}
-for m in M:
-    p[m] = float(Fraction(1, numEdges))
-#p = [float(Fraction(1, edges))] * (edges + 1)
-
-arcs = []
-edges = []
-arcCount = 1
-edgeCount = 1
-S = defaultdict(int)
-E = defaultdict(int)
-O = defaultdict(int)
-for node in mygraph:
-    for endNode in mygraph[node]:
-        if (node, endNode) in arcs:
-            print("duplicate arc")
-            exit(1)
-        arcs.append((node, endNode))
-        S[node, arcCount] = 1
-        E[endNode, arcCount] = 1
-        O[edgeCount, arcCount] = 1
-        arcCount += 1
-        if (node, endNode)[::-1] not in edges:
-            edges.append((node, endNode))
-            edgeCount += 1
+arcs = genArcs(graph)
+nodes = genNodes(graph)
 
 X = {(t, l): mip.addVar(vtype=GRB.BINARY) for t in T for l in L}
-Y = {(t, m): mip.addVar(vtype=GRB.BINARY) for t in range(0, maxTime + 1) for m in M}
-alpha = {t: mip.addVar() for t in range(0, maxTime + 1)}
+Y = {(t, m): mip.addVar(vtype=GRB.BINARY) for t in T for m in M}
+alpha = {t: mip.addVar() for t in T}
 
-mip.setObjective(quicksum((alpha[t-1]+alpha[t])/2 for t in T), GRB.MINIMIZE) #2
+mip.setObjective(quicksum((alpha[t]+alpha[t + 1])/2 for t in range(0, maxTime - 1)), GRB.MINIMIZE) #2
 
-for t in T:
-    mip.addConstr(quicksum(X[t, l] for l in L) <= K) #3
-    mip.addConstr(alpha[t] == 1 - quicksum(p[m] * Y[t, m] for m in M)) # 6
-    for m in M:
-        mip.addConstr(Y[t, m] <= Y[t - 1, m] + quicksum(O[m, l] * X[t, l] for l in L)) #5 
-
-for t in range(1, maxTime):
-    for n in N:
-        mip.addConstr(quicksum(E[n, l] * X[t, l] for l in L) == 
-                      quicksum(S[n, l] * X[t + 1, l] for l in L)) # 4
-
-mip.addConstr(alpha[maxTime] <= 0.001)
-for m in M:
-    mip.addConstr(Y[0, m] == 0)
+#num arcs searched can't exceed num searchers
+searcherLim = {t: mip.addConstr(quicksum(X[t, l] for l in L) <= K) for t in T}
+#define alpha as in paper
+defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(p * Y[t, m] for m in 
+            M for p in pUn.keys() if edges[m] in pUn[p])) for t in T}
+#update search info after every time step
+updateSearch = {(t, m): mip.addConstr(Y[t, m] <= Y[t - 1, m] + 
+                quicksum(O(arcs[l], edges[m]) * X[t, l] for l in L)) for t in 
+                range(1, maxTime) for m in M}
+#conserve arc flow on nodes
+consFlow = {(t, n): mip.addConstr(quicksum(E(arcs[l], nodes[n]) * X[t, l] for l in L) == 
+                      quicksum(S(arcs[l], nodes[n])* X[t + 1, l] for l in L)) for t in 
+                        range(0, maxTime - 1) for n in N}
+#initially, no edges have been searched
+initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
+#limit alpha so target is found by time maxTime
+mip.addConstr(alpha[maxTime - 1] <= 0.001)
 
 mip.optimize()
-
-print("arc count", arcCount)
-print("edge count", edgeCount)
-print("len s", len(S))
-print('len e', len(E))
-print("len o", len(O))
     
-
-
-
-
-
-#def run_instance(graph):
