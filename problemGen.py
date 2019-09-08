@@ -19,8 +19,6 @@ GRID_SIZE = 10
 # Can also pass a graph to display on the lattice
 # This is to be used for displaying sparse graphs in the nice grid format like
 # in the paper
-
-
 def displayLattice(size=GRID_SIZE, graph=None):
     for i in range(size):  # Rows
         for j in range(size):  # Columns
@@ -102,7 +100,7 @@ def generateProbabilities(graph, probType):
     #number of nodes
     numNodes = sum(n for n in graph.keys())
     #number of edges
-    numEdges = sum(len(graph[n]) for n in graph.keys())/2
+    numEdges = sum(len(graph[n]) for n in graph.keys())//2
     if not probType:
         #gen uniformly dist. probs
         pUn = 1/numEdges
@@ -134,10 +132,31 @@ def generateProbabilities(graph, probType):
     return pUn, pNon, edgeNums
         
 def generateDense(edges, nodes, graph):
+    for i in range(nodes):
+        graph[nodes] = set()
+    edgesMade = 0
+
+    while edgesMade < edges:
+        node1 = randint(1, nodes)
+        node2 = randint(1, nodes)
+        while node2 == node1:
+            node2= randint(1, nodes)
+        if node2 not in graph[node1] and node1 not in graph[node2]:
+            graph[node1].add(node2)
+            graph[node2].add(node1)
+            edgesMade += 1
     return graph
 
 # Generate a network with the given number of edges and nodes
-def generateNetwork(edges, nodes, probType, initSeed=None):
+# Params:
+"""
+Params:
+    edges - number of edges to use
+    nodes- number of nodes to use
+    probType - type of probability distribution to use uniform or non-uniform
+    initSeed - optional seed to use when generating graphs
+"""
+def generateNetwork(edges, nodes, probType=None, initSeed=None):
     if initSeed is None:
         initSeed = randrange(sys.maxsize)
     # Seed the RNG
@@ -164,7 +183,7 @@ def generateNetwork(edges, nodes, probType, initSeed=None):
             validNeighbours = tuple(
                 x for x in gridNeighbours(currentNode)
                 if x is not None
-                )
+            )
             for v in validNeighbours:
                 if len(visited) >= b:
                     break
@@ -184,23 +203,18 @@ def generateNetwork(edges, nodes, probType, initSeed=None):
                         numEdges += 1
     else:
         # Dense network
-        # graph = generateDense(a,b, graph)
+        graph = generateDense(a,b, graph)
 
-        for i in range(b):
-            graph[b] = set()
-        edgesMade = 0
+        # use network x to check if it's connected
+        connectedTest = nx.Graph(graph)
 
-        while edgesMade < a:
-            node1 = randint(1, b)
-            node2 = randint(1, b)
-            while node2 == node1:
-                node2= randint(1, b)
-            if node2 not in graph[node1] and node1 not in graph[node2]:
-                graph[node1].add(node2)
-                graph[node2].add(node1)
-                edgesMade += 1
-            else:
-                pass
+        # If the generated dense graph is disconnected, generate a new one
+        while not nx.is_connected(connectedTest):
+            graph.clear()
+            graph = generateDense(a, b, graph)
+            connectedTest = nx.Graph(denseInstance)
+        
+        connectedTest = None
             
     #assign probabilities to existing edges in graph
     pUn, pNon, edgeNums = generateProbabilities(graph, probType)
@@ -275,13 +289,6 @@ if __name__ == "__main__":
 
     dense = nx.Graph(denseInstance)
 
-    # If the generated dense graph is disconnected, generate a new one
-    while not nx.is_connected(dense):
-        denseInstance = generateNetwork(28, 12)
-        dense = nx.Graph(denseInstance)
-
-    # print(nx.to_dict_of_lists(dense))
-    # print(denseInstance)
     fig, (ax1, ax2) = plot.subplots(1, 2)
 
     ax1.set_title('Dense')
