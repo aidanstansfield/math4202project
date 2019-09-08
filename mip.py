@@ -6,7 +6,7 @@ from fractions import Fraction
 numEdges = 19
 numNodes = 15
 K = 1
-maxTime = 100
+maxTime = 50
 
 M = range(0, numEdges)
 N = range(0, numNodes)
