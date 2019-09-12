@@ -15,6 +15,8 @@ import networkx as nx
 import matplotlib.pyplot as plot
 
 GRID_SIZE = 10
+
+
 # Display a square lattice of dimensions size (default 10)
 # Can also pass a graph to display on the lattice
 # This is to be used for displaying sparse graphs in the nice grid format like
@@ -202,7 +204,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
                         numEdges += 1
     else:
         # Dense network
-        graph = generateDense(a,b, graph)
+        graph = generateDense(a, b, graph)
 
         # use network x to check if it's connected
         connectedTest = nx.Graph(graph)
@@ -280,8 +282,8 @@ def E(a, n):
 
 
 def O(a, e):
-    # does edge e contain arc a
-    if a[0] == e[0] and a[1] == e[1]:
+    #does edge e contain arc a
+    if (a[0] == e[0] and a[1] == e[1]) or (a[1] == e[0] and a[0] == e[1]):
         return 1
     else:
         return 0
