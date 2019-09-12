@@ -95,34 +95,34 @@ def indexToXY(index, size=GRID_SIZE):
 
 
 def generateProbabilities(graph, probType):
-    pUn = None #uniform prob
-    pNon = None #non-uniform prob
-    #number of nodes
+    pUn = None  # uniform prob
+    pNon = None  # non-uniform prob
+    # number of nodes
     numNodes = sum(n for n in graph.keys())
-    #number of edges
+    # number of edges
     numEdges = sum(len(graph[n]) for n in graph.keys())//2
     if not probType:
-        #gen uniformly dist. probs
+        # gen uniformly dist. probs
         pUn = 1/numEdges
         edgeNums = numEdges
     elif probType:
-        #define number of edges st. Cl: Cm: Ch app = 1: 2: 1
+        # define number of edges st. Cl: Cm: Ch app = 1: 2: 1
         edgeFloor = numEdges//4
-        edgeMod = numEdges % 4 #num edges mod 4
-        #we need to split the edges into groups approximately of the ratio
-        #1: 2: 1 (4 "pieces")- decide what to do with leftovers depending on 
-        #how many leftovers
-        edgeNums = []
-        if edgeMod == 0:
-            edgeNums = [edgeFloor, 2 * edgeFloor, edgeFloor]
-        elif edgeMod <= 2:
-            edgeNums = [edgeFloor, 2 * edgeFloor + edgeMod, edgeFloor]
-        elif edgeMod  == 3:
-            edgeNums = [edgeFloor + 1, 2 *edgeFloor + 1, edgeFloor + 1]
-        else:
-            print('Something Wrong')
+        edgeMod = numEdges % 4  # num edges mod 4
+        # we need to split the edges into groups approximately of the ratio
+        # 1: 2: 1 (4 "pieces")- decide what to do with leftovers depending on
+        # how many leftovers
+        edgeNums = [edgeFloor, 2 * edgeFloor, edgeFloor]
+
+        if edgeMod < 0 or edgeMod > 3:
+            print('Something went wrong')
             return -1
-        #define list of probs of the form [pl, pm, ph]
+        if edgeMod == 1 or edgeMod == 2:
+            edgeNums[1] += edgeMod
+        elif edgeMod == 3:
+            edgeNums = [i+1 for i in edgeNums]
+
+        # define list of probs of the form [pl, pm, ph]
         p = 1/(edgeNums[0] + 2 * edgeNums[1] + 3 * edgeNums[2])
         pNon = [p, 2 * p, 3 * p]
         pNon = [p for p in pNon]
@@ -130,7 +130,8 @@ def generateProbabilities(graph, probType):
         print('Invalid Graph Type')
         return -1
     return pUn, pNon, edgeNums
-        
+
+
 def generateDense(edges, nodes, graph):
     for i in range(nodes):
         graph[nodes] = set()
@@ -140,22 +141,20 @@ def generateDense(edges, nodes, graph):
         node1 = randint(1, nodes)
         node2 = randint(1, nodes)
         while node2 == node1:
-            node2= randint(1, nodes)
+            node2 = randint(1, nodes)
         if node2 not in graph[node1] and node1 not in graph[node2]:
             graph[node1].add(node2)
             graph[node2].add(node1)
             edgesMade += 1
     return graph
 
+
 # Generate a network with the given number of edges and nodes
 # Params:
-"""
-Params:
-    edges - number of edges to use
-    nodes- number of nodes to use
-    probType - type of probability distribution to use uniform or non-uniform
-    initSeed - optional seed to use when generating graphs
-"""
+#     edges - number of edges to use
+#     nodes- number of nodes to use
+#     probType - type of probability distribution to use uniform or non-uniform
+#     initSeed - optional seed to use when generating graphs
 def generateNetwork(edges, nodes, probType=None, initSeed=None):
     if initSeed is None:
         initSeed = randrange(sys.maxsize)
@@ -213,15 +212,15 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
             graph.clear()
             graph = generateDense(a, b, graph)
             connectedTest = nx.Graph(denseInstance)
-        
+
         connectedTest = None
-            
-    #assign probabilities to existing edges in graph
+
+    # assign probabilities to existing edges in graph
     pUn, pNon, edgeNums = generateProbabilities(graph, probType)
     edges = genEdges(graph)
     prob = {}
     if pUn is not None:
-        #uniform case
+        # uniform case
         prob[pUn] = [e for e in edges.values()]
     else:
         generatedTypes = [0, 0, 0]
@@ -233,8 +232,9 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
                 edgeType = randint(0, 2)
             prob[pNon[edgeType]].append(edges[e])
             generatedTypes[edgeType] += 1
-            
+
     return graph, prob, edges
+
 
 def genEdges(graph):
     edges = {}
@@ -246,6 +246,7 @@ def genEdges(graph):
                 e += 1
     return edges
 
+
 def genArcs(graph):
     arcs = []
     for i in graph.keys():
@@ -254,35 +255,39 @@ def genArcs(graph):
                 arcs.append((i, j))
     return arcs
 
+
 def genNodes(graph):
     nodes = []
     for n in graph:
         nodes.append(n)
     return nodes
 
+
 def S(a, n):
-    #does arc a start on node n
+    # does arc a start on node n
     if a[0] == n:
         return 1
     else:
         return 0
-    
+
+
 def E(a, n):
-    #does arc a end on node n
+    # does arc a end on node n
     if a[1] == n:
         return 1
     else:
         return 0
-    
+
+
 def O(a, e):
-    #does edge e contain arc a
+    # does edge e contain arc a
     if a[0] == e[0] and a[1] == e[1]:
         return 1
     else:
         return 0
-    
+
 if __name__ == "__main__":
-    sparseInstance, p1, _ = generateNetwork(24, 18, 0, 409633023)
+    sparseInstance, p1, _ = generateNetwork(24, 18, 0)
     denseInstance, p2, _ = generateNetwork(28, 12, 1)
 
     displayLattice(graph=sparseInstance)
