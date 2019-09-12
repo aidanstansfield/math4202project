@@ -208,27 +208,27 @@ def generateNetwork(edges, nodes, probType, initSeed=None):
     prob = {}
     if pUn is not None:
         #uniform case
-        prob[pUn] = [e for e in edges.values()]
+        for e in edges:
+            prob[e] = pUn
     else:
         generatedTypes = [0, 0, 0]
-        for p in pNon:
-            prob[p] = []
-        for e in edges.keys():
+        for e in edges:
             edgeType = randint(0, 2)
             while generatedTypes[edgeType] == edgeNums[edgeType]:
                 edgeType = randint(0, 2)
-            prob[pNon[edgeType]].append(edges[e])
+            prob[e] = pNon[edgeType]
             generatedTypes[edgeType] += 1
-            
+    print(edges)
+    print(prob)
     return graph, prob, edges
 
 def genEdges(graph):
-    edges = {}
+    edges = []
     e = 0
     for i in graph.keys():
         for j in graph[i]:
-            if (i, j) not in edges.values() and (j, i) not in edges.values():
-                edges[e] = (i, j)
+            if (i, j) not in edges and (j, i) not in edges:
+                edges.append((i, j))
                 e += 1
     return edges
 
@@ -262,7 +262,7 @@ def E(a, n):
     
 def O(a, e):
     #does edge e contain arc a
-    if a[0] == e[0] and a[1] == e[1]:
+    if a[0] == e[0] and a[1] == e[1] or a[1] == e[0] and a[0] == e[1]:
         return 1
     else:
         return 0
