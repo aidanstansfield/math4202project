@@ -16,17 +16,9 @@ def genNeighbours(edges):
                 neighbours[edges[m1]].append(edges[m2])
     return neighbours
 
-def genLeaf(graph, edges):
-    leaf = []
-    neigh = genNeighbours(edges)
-    for m in neigh:
-        if len(neigh[m]) == 1:
-            leaf.append(m)
-    return leaf
-
 def MIP(probType, K, numEdges, numNodes):
     #min time for searchers to search every arc
-    maxTime = 50
+    maxTime = math.ceil(2 * numEdges/K)
     print('yes')
 #    graph, p, edges = genEx(probType)
 #    print('yes2')
@@ -101,56 +93,7 @@ def MIP(probType, K, numEdges, numNodes):
     initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
     #limit y so that every arc is searched by T
     {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
-    #dont start on low prob nodes
     
-    
-    #solve LP relaxation of Problem and add lazy constraints
-#    for x in X.values():
-#        x.vtype = 'C'
-#    for y in Y.values():
-#        y.vtype = 'C'
-#    mip.setParam('OutputFlag', 0)
-#    #solve LP relaxation to get lower bound on MIP obj val, if no constraints
-#    #can be added, stop process
-#    mip.optimize()
-#    maxTime = 2 * mip.objVal
-#    print('LP: ', mip.objVal)
-#    lb = 0.9
-#    fixed = 0
-#    f = []
-#    cantFix = []
-#    prvObj = mip.objVal
-#    tol = 0.05
-#    for t in T[1:]:
-#        for l in L:
-#            print(X[t, l].x)
-#    while True:
-#        for t in T[1:]:
-#            for l in L:
-#                if X[t, l].x > lb:
-#                    lowerBound[t, l].RHS = math.ceil(X[t, l].x)
-#                    mip.optimize()
-#                    if mip.objVal >= prvObj + tol:
-#                        lowerBound[t, l].RHS = 0
-#                    else:
-#                        f.append(X[t, l].x)
-#                        fixed += 1
-#        if fixed == 0:
-#            lb -= 0.1
-#        else:
-#            break
-##            if X[t, l].x > 0.6:
-##                lowerBound[t, l].RHS = 1
-#    print(f)
-#    print(cantFix)
-#    for x in X.values():
-#        x.vtype = 'I'
-#    for y in Y.values():
-#        y.vtype = 'B'
-#    mip.setParam('OutputFlag', 1)
-        
-    #optimize
-    mip.setParam('OutputFlag', 1)
     mip.optimize()
     
     return mip.objVal, graph
