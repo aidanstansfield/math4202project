@@ -211,10 +211,17 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         edges = genEdges(graph)
         numEdges = len(edges)
         if numEdges < a:
+#            print('Initial Gen: ')
+#            displayLattice(graph = graph)
             graph, numEdges = adjust1(graph, numEdges, a)
-        if numEdges < a:
-            graph, numEdges = adjust2(graph, numEdges, a)
+#        if numEdges < a:
+#            print('Second Gen: ')
+#            displayLattice(graph = graph)
+#            graph, numEdges = adjust2(graph, numEdges, a)
         if numEdges < a or len(graph.keys()) < b:
+            graph, _, _ = generateNetwork(a, b, probType)
+        crowded, _ = checkCrowded(graph)
+        if crowded:
             graph, _, _ = generateNetwork(a, b, probType)
     else:
         # Dense network
@@ -252,7 +259,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 
 
 def adjust1(graph, numEdges, a):
-    print('Graph Adjust 1', numEdges)
+#    print('Graph Adjust 1', numEdges)
     found = 0
     for i in graph.keys():
         for j in gridNeighbours(i):
@@ -262,18 +269,18 @@ def adjust1(graph, numEdges, a):
                 graph[j].add(i)
                 numEdges += 1
                 found += 1
-    print(found, ' edges added')
-    print('Post Adjust 1: ', numEdges)
+#    print(found, ' edges added')
+#    print('Post Adjust 1: ', numEdges)
     return graph, numEdges
 
 def adjust2(graph, numEdges, a):
-    print('Edge Adjust 2: ', numEdges)
+#    print('Edge Adjust 2: ', numEdges)
     leaf = genLeaf(graph)
     for e in leaf:
         graph.pop(e[0])
         graph[e[1]].remove(e[0])
         numEdges -= 1
-        print('Edge Removed: ', numEdges)
+#        print('Edge Removed: ', numEdges)
         found = 0
         while found == 0:
             baseNode = choice(list(graph.keys()))
@@ -284,11 +291,43 @@ def adjust2(graph, numEdges, a):
                     graph[n].add(baseNode)
                     found += 1
                     numEdges += 1
-                    print('Edge Added: ', numEdges)
+#                    print('Edge Added: ', numEdges)
                     break
-    print('Post Adjust 2: ', numEdges)
+#    print('Post Adjust 2: ', numEdges)
     return graph, numEdges
 
+def checkCrowded(graph):
+    for n in graph.keys():
+        if n % 10 != 0 and n % 10 != 9 and (n > 20 or n < 80):
+            found = [n]
+            direction = 1
+            for m in range(n - 1, n + 2):
+                if m in graph[n]:
+                    found.append(m)
+            if len(found) != 3:
+                continue
+            direction = 1
+            for m in range(n + 10 - 1, n + 10 + 2):
+                for f in found:
+                    if m in graph[f] and m not in found:
+                        found.append(m)
+            if len(found) == 3:
+                direction = -1
+                for m in range(n - 10 - 1, 10 * n + 2):
+                    for f in found:
+                        if m in graph[f] and m not in found:
+                            found.append(m)
+            if len(found) == 6:
+                for m in range(n + 2 * direction * 10 - 1, n + 2 * direction * 10 + 2):
+                    for f in found:
+                        if m in graph[f] and m not in found:
+                            found.append(m)
+            if len(found) == 9:
+                return 1, found
+    return 0, found
+                
+                    
+        
 #functions used to check for and fix disconnectedness in network- bit touchy 
 #sometimes hence commented
 #def fixDiscon(graph):
@@ -342,36 +381,38 @@ def genNodes(graph):
 #edges/nodes and gives statements alerting if any bad stuff occurs
 #if no printed error messages, network should be fine
     
-gs = {}
-es = {}
-bad = []
-#discon = []
-#for i in range(1000):
-#    gs[i], _, es[i] = generateNetwork(24, 18, 0)
-##    if broke:
-##        discon.append(i)
-#    if len(es[i]) < 24:
-#        bad.append(i)
-#        print('####################### TOO FEW EDGES ######################')
-#        print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-#    elif len(es[i]) > 24:
-#        bad.append(i)
-#        print('####################### TOO MANY EDGES ######################')
-#        print(len(es[i]), len(es[i]), 'i = ', i)
-#    if len(gs[i].keys()) > 18:
-#        bad.append(i)
-#        print('####################### TOO MANY NODES ######################')
-#        print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-#    if len(gs[i].keys()) < 18:
-#        bad.append(i)
-#        print('####################### TOO FEW NODES ######################')
-#        print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-#if len(bad) > 0:
-#    print('**************************BAD ALERT******************************')
-#    print(bad)
+def genMult(a, b, probType, N):
+    gs = {}
+    es = {}
+    bad = []
+    for i in range(N):
+        gs[i], _, es[i] = generateNetwork(a, b, probType)
+        if len(es[i]) < a:
+            bad.append(i)
+            print('####################### TOO FEW EDGES ######################')
+            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+        elif len(es[i]) > a:
+            bad.append(i)
+            print('####################### TOO MANY EDGES ######################')
+            print(len(es[i]), len(es[i]), 'i = ', i)
+        if len(gs[i].keys()) > b:
+            bad.append(i)
+            print('####################### TOO MANY NODES ######################')
+            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+        if len(gs[i].keys()) < b:
+            bad.append(i)
+            print('####################### TOO FEW NODES ######################')
+            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+        print(checkCrowded(gs[i]), 'i = ', i)
+        displayLattice(graph = gs[i])
+        
+    if len(bad) > 0:
+        print('**************************BAD ALERT******************************')
+        print(bad)
+    return gs, es, bad
 #if len(discon) > 0:
 #    print('**************************DISCONNECTED******************************')
-#    displayLattice(graph = gs[i])
+
     
     
     
