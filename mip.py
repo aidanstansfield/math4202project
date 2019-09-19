@@ -1,5 +1,6 @@
 from gurobipy import quicksum, GRB, Model
-from problemGen import generateNetwork, genArcs, genNodes, S, E, O
+from problemGen import generateNetwork, genArcs, genNodes, displayGraph, genMult
+from time import clock
 
 def genNeighbours(edges):
     M = range(len(edges))
@@ -13,9 +14,13 @@ def genNeighbours(edges):
                 neighbours[edges[m1]].append(edges[m2])
     return neighbours
 
+UNIFORM = 0
+NON_UNIFORM = 1
+
 def MIP(probType, K, numEdges, numNodes):
+#    startgen = clock()
     #min time for searchers to search every arc
-    maxTime = math.ceil(2 * numEdges/K)
+    maxTime = 50
     print('yes')
 #    graph, p, edges = genEx(probType)
 #    print('yes2')
@@ -57,6 +62,11 @@ def MIP(probType, K, numEdges, numNodes):
                 S[l, n] = 0
                 E[l, n] = 0
     
+#    endgen = clock()
+#    genTime = startgen - endgen
+    
+#    startMIP = clock()
+    
     mip = Model("Model searchers searching for a randomly distributed immobile" \
                 "target on a unit network")
     
@@ -92,6 +102,19 @@ def MIP(probType, K, numEdges, numNodes):
     {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
     
     mip.optimize()
+    time = mip.Runtime
     
-    return mip.objVal, graph
+#    endMIP = clock()
+    
+#    MIPtime = startMip - endMip
+    
+    return mip.objVal, graph, time
+    
+#ob = [0 for i in range(10)]
+#time = [0 for i in range(10)]
+#gs = {}
+#for i in range(10):
+#    ob[i], gs[i], time[i] = MIP(1, 1, 19, 15)
+#avET = sum(ob)/len(ob)
+#    
     
