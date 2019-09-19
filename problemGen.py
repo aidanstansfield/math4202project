@@ -66,6 +66,17 @@ def displayGraph(graph):
         for i in v:
             print(k, i)
 
+def genLeaf(graph):
+    leaf = []
+    for n in graph.keys():
+        if len(graph[n]) == 1:
+            if (n, graph[n]) not in leaf and (graph[n], n) not in leaf:
+                leaf.append((n, list(graph[n])[0]))
+#    neigh = genNeighbours(edges)
+#    for m in neigh:
+#        if len(neigh[m]) == 1:
+#            leaf.append(m)
+    return leaf
 
 # Return the indexes of the neighbour of a point in order clockwise
 # Up, right, down, left
@@ -107,7 +118,7 @@ def generateProbabilities(graph, probType):
         # gen uniformly dist. probs
         pUn = 1/numEdges
         edgeNums = numEdges
-    elif probType:
+    elif probType == 1:
         # define number of edges st. Cl: Cm: Ch app = 1: 2: 1
         edgeFloor = numEdges//4
         edgeMod = numEdges % 4  # num edges mod 4
@@ -115,10 +126,6 @@ def generateProbabilities(graph, probType):
         # 1: 2: 1 (4 "pieces")- decide what to do with leftovers depending on
         # how many leftovers
         edgeNums = [edgeFloor, 2 * edgeFloor, edgeFloor]
-
-        if edgeMod < 0 or edgeMod > 3:
-            print('Something went wrong')
-            return -1
         if edgeMod == 1 or edgeMod == 2:
             edgeNums[1] += edgeMod
         elif edgeMod == 3:
@@ -171,37 +178,44 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     graph = defaultdict(set)
     if a/b < 2:
         # Sparse network - like a manhattan network
-        start = randint(0, GRID_SIZE**2 - 1)
+        #randomly choose a starting point on the grid
+        start = randint(0, GRID_SIZE ** 2 - 1)
+        #list of nodes we have visited (and thus will be added to the network)
+        visited = [start]
         graph[start] = set()
-        visited = [start]  # Nodes visited already
-        queue = [start]  # Nodes to visit
-        # Make a-1 edges
-        while len(visited) < b and queue:  # Breadth first search
-            currentNode = queue.pop()
-            # Generate a tuple of valid neighbour indexes
-            # (if a value is on the end of the grid,
-            # neighbours outside the grid are None)
-            validNeighbours = tuple(
-                x for x in gridNeighbours(currentNode)
-                if x is not None
-            )
+        #loop will run until we have the right number of nodes/edges in graph
+        while len(visited) < b:
+            #pick random element in visited (on first run, this will just be
+            #the start node)
+            current = choice(visited)
+            #find neighbours of current node
+            validNeighbours = tuple(x for x in gridNeighbours(current) if x 
+                                    is not None)
+            #add neighbours that we haven't visited to a list
+            nlist = []
             for v in validNeighbours:
-                if len(visited) >= b:
-                    break
                 if v not in visited:
-                    graph[currentNode].add(v)
-                    graph[v].add(currentNode)
-                    visited.append(v)
-                    queue.append(v)
-
-        numEdges = len(visited) - 1
-        for i in graph.keys():
-            for j in gridNeighbours(i):
-                if numEdges < a:
-                    if j in graph.keys() and j not in graph[i] and j is not None:
-                        graph[i].add(j)
-                        graph[j].add(i)
-                        numEdges += 1
+                    nlist.append(v)
+            #randnum is number of neighbours we add (to give graph more
+            #spread out/random look)
+            randNum = randint(0, len(nlist))
+            for n in range(randNum):
+                #randomly choose a neighbour
+                cand = choice(nlist)
+                if cand not in visited:
+                    #add neighbour node to graph connected to current node
+                    if len(visited) < b:
+                        graph[current].add(cand)
+                        graph[cand].add(current)
+                        visited.append(cand)
+        edges = genEdges(graph)
+        numEdges = len(edges)
+        if numEdges < a:
+            graph, numEdges = adjust1(graph, numEdges, a)
+        if numEdges < a:
+            graph, numEdges = adjust2(graph, numEdges, a)
+        if numEdges < a or len(graph.keys()) < b:
+            graph, _, _ = generateNetwork(a, b, probType)
     else:
         # Dense network
         graph = generateDense(a, b, graph)
@@ -223,22 +237,82 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     edges = genEdges(graph)
     prob = {}
     if pUn is not None:
-        # uniform case
-        prob[pUn] = [e for e in edges]
+        #uniform case
+        for e in edges:
+            prob[e] = pUn
     else:
         generatedTypes = [0, 0, 0]
-        for p in pNon:
-            prob[p] = []
         for e in edges:
             edgeType = randint(0, 2)
             while generatedTypes[edgeType] == edgeNums[edgeType]:
                 edgeType = randint(0, 2)
-            prob[pNon[edgeType]].append(e)
+            prob[e] = pNon[edgeType]
             generatedTypes[edgeType] += 1
 
     return graph, prob, edges
 
 
+def adjust1(graph, numEdges, a):
+    print('Graph Adjust 1', numEdges)
+    found = 0
+    for i in graph.keys():
+        for j in gridNeighbours(i):
+            if j in graph.keys() and j not in graph[i] and j is not \
+                None and numEdges < a:
+                graph[i].add(j)
+                graph[j].add(i)
+                numEdges += 1
+                found += 1
+    print(found, ' edges added')
+    print('Post Adjust 1: ', numEdges)
+    return graph, numEdges
+
+
+def adjust2(graph, numEdges, a):
+    print('Edge Adjust 2: ', numEdges)
+    leaf = genLeaf(graph)
+    for e in leaf:
+        graph.pop(e[0])
+        graph[e[1]].remove(e[0])
+        numEdges -= 1
+        print('Edge Removed: ', numEdges)
+        found = 0
+        while found == 0:
+            baseNode = choice(list(graph.keys()))
+            neighbours = gridNeighbours(baseNode)
+            for n in neighbours:
+                if n is not None and numEdges < a:
+                    graph[baseNode].add(n)
+                    graph[n].add(baseNode)
+                    found += 1
+                    numEdges += 1
+                    print('Edge Added: ', numEdges)
+                    break
+    print('Post Adjust 2: ', numEdges)
+    return graph, numEdges
+
+#functions used to check for and fix disconnectedness in network- bit touchy 
+#sometimes hence commented
+#def fixDiscon(graph):
+#    for n in graph.keys():
+#        if len(graph[n]) == 1:
+#            for m in graph[n]:
+#                if len(graph[m]) == 1:
+#                    neighbours = gridNeighbours(m)
+#                    for i in neighbours:
+#                        if i is not None and i in graph.keys() and i not in \
+#                        graph[m]:
+#                            graph[m].add(i)
+#                            graph[i].add(m)
+#    return graph
+#
+#def checkDiscon(graph):
+#    for n in graph.keys():
+#        if len(graph[n]) == 1:
+#            for m in graph[n]:
+#                if len(graph[m]) == 1:
+#                    return 1
+#    return 0
 def genEdges(graph):
     edges = set()
     for k, v in graph.items():
@@ -324,7 +398,79 @@ if __name__ == "__main__":
     sparseInstance, p1, _ = generateNetwork(24, 18, 1)
     denseInstance, p2, _ = generateNetwork(28, 12, 0, 2121208622)
 
-    # dense = nx.Graph(denseInstance)
     # displayLattice(graph=sparseInstance)
     # displayGraph(denseInstance)
     # displayGraph(sparseInstance)
+
+#to test if networks generated properly, run following script which generates
+#1000 different networks and checks if they produce the right num of 
+#edges/nodes and gives statements alerting if any bad stuff occurs
+#if no printed error messages, network should be fine
+    
+gs = {}
+es = {}
+bad = []
+#discon = []
+#for i in range(1000):
+#    gs[i], _, es[i] = generateNetwork(24, 18, 0)
+##    if broke:
+##        discon.append(i)
+#    if len(es[i]) < 24:
+#        bad.append(i)
+#        print('####################### TOO FEW EDGES ######################')
+#        print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#    elif len(es[i]) > 24:
+#        bad.append(i)
+#        print('####################### TOO MANY EDGES ######################')
+#        print(len(es[i]), len(es[i]), 'i = ', i)
+#    if len(gs[i].keys()) > 18:
+#        bad.append(i)
+#        print('####################### TOO MANY NODES ######################')
+#        print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#    if len(gs[i].keys()) < 18:
+#        bad.append(i)
+#        print('####################### TOO FEW NODES ######################')
+#        print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#if len(bad) > 0:
+#    print('**************************BAD ALERT******************************')
+#    print(bad)
+#if len(discon) > 0:
+#    print('**************************DISCONNECTED******************************')
+#    displayLattice(graph = gs[i])
+    
+    
+    
+#if __name__ == "__main__":
+##    sparseInstance, p1, _ = generateNetwork(24, 18, 0)
+#    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
+#    print('Nodes: ', len(sparseInstance.keys()))
+#    edges = genEdges(sparseInstance)
+#    numedges = len(edges)
+#    print('Edges: ', numedges)
+#    denseInstance, p2, _ = generateNetwork(30, 12, 1)
+#
+##    displayLattice(graph=sparseInstance)
+#
+#    dense = nx.Graph(denseInstance)
+#
+#    fig, (ax1, ax2) = plot.subplots(1, 2)
+#
+#    ax1.set_title('Dense')
+#    ax1.set_axis_off()
+#    nx.draw_networkx(dense, ax=ax1)
+#
+#    ax2.set_title('Sparse')
+#    ax2.set_xlim(-1, 10)
+#    ax2.set_ylim(-1, 10)
+#
+#    for key in sparseInstance.keys():
+#        keyCoords = indexToXY(key)
+#        for node in sparseInstance[key]:
+#            nodeCoord = indexToXY(node)
+#            ax2.plot(
+#                [keyCoords[0], nodeCoord[0]],
+#                [keyCoords[1], nodeCoord[1]],
+#                'b.-'
+#                )
+#
+#    plot.show()
