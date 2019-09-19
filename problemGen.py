@@ -384,9 +384,10 @@ def genNodes(graph):
 def genMult(a, b, probType, N):
     gs = {}
     es = {}
+    p = {}
     bad = []
     for i in range(N):
-        gs[i], _, es[i] = generateNetwork(a, b, probType)
+        gs[i], p[i], es[i] = generateNetwork(a, b, probType)
         if len(es[i]) < a:
             bad.append(i)
             print('####################### TOO FEW EDGES ######################')
@@ -409,7 +410,7 @@ def genMult(a, b, probType, N):
     if len(bad) > 0:
         print('**************************BAD ALERT******************************')
         print(bad)
-    return gs, es, bad
+    return gs, es, p, bad
 #if len(discon) > 0:
 #    print('**************************DISCONNECTED******************************')
 

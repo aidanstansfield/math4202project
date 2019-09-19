@@ -17,10 +17,9 @@ def genNeighbours(edges):
                 neighbours[edges[m1]].append(edges[m2])
     return neighbours
 
-def MIP(probType, K, numEdges, numNodes):
+def MIP(probType, K, numEdges, numNodes, maxTime):
 #    startgen = clock()
-    #min time for searchers to search every arc
-    maxTime = 50
+    #min time for searchers to search every arc\
     print('yes')
 #    graph, p, edges = genEx(probType)
 #    print('yes2')
@@ -35,15 +34,14 @@ def MIP(probType, K, numEdges, numNodes):
     #data
     #gen network - p is pdf and edges is set of edges
     graph, p, edges = generateNetwork(numEdges, numNodes, probType)
+    
     S = {}
     E = {}
     O = {}
     #gen set of arcs
     arcs = genArcs(graph)
-    print(arcs)
     #gen set of nodes
     nodes = genNodes(graph)
-    print('E: ', edges)
     #define values for functions S, E and O and store in dict.
     for l in L:
         for m in M:
@@ -66,6 +64,13 @@ def MIP(probType, K, numEdges, numNodes):
 #    genTime = startgen - endgen
     
 #    startMIP = clock()
+    maxP = max(p.values())
+    maxEdges = [m for m in M if p[edges[m]] == maxP]
+    maxArcs = []
+    for l in L:
+        for m in maxEdges:
+            if O[l, m]:
+                maxArcs.append(l)
     
     mip = Model("Model searchers searching for a randomly distributed immobile" \
                 "target on a unit network")
@@ -95,12 +100,14 @@ def MIP(probType, K, numEdges, numNodes):
     #conserve arc flow on nodes
     consFlow = {(t, n): mip.addConstr(quicksum(E[l, n] * X[t, l] for l in L) == 
                           quicksum(S[l, n]* X[t + 1, l] for l in L)) for t in 
-                            T[1: -2] for n in N}
+                            T[1: -1] for n in N}
     #initially, no edges have been searched
     initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
     #limit y so that every arc is searched by T
-    {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
-    
+    yLim = {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
+    if probType:
+        #only consider edges of high prob for start points
+        startHigh = {l: mip.addConstr(X[1, l] == 0) for l in L if l not in maxArcs}
     mip.optimize()
     time = mip.Runtime
     
@@ -110,11 +117,12 @@ def MIP(probType, K, numEdges, numNodes):
     
     return mip.objVal, graph, time
     
-#ob = [0 for i in range(10)]
-#time = [0 for i in range(10)]
-#gs = {}
-#for i in range(10):
-#    ob[i], gs[i], time[i] = MIP(1, 1, 19, 15)
-#avET = sum(ob)/len(ob)
-#    
-    
+def runMIP(probType, K, a, b, N, maxTime):
+    ob = [0 for i in range(N)]
+    time = [0 for i in range(N)]
+    gs = {}
+    for i in range(N):
+        ob[i], gs[i], time[i] = MIP(probType, K, a, b, maxTime)
+    avET = sum(ob)/len(ob)
+    avRT = sum(time)/len(time)
+    return ob, time, gs, avET, avRT
