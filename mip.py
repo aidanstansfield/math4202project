@@ -17,7 +17,7 @@ def genNeighbours(edges):
 UNIFORM = 0
 NON_UNIFORM = 1
 
-def MIP(probType, K, numEdges, numNodes):
+def MIP(probType, K, numEdges, numNodes, seed=None):
 #    startgen = clock()
     #min time for searchers to search every arc
     maxTime = 50
@@ -34,7 +34,7 @@ def MIP(probType, K, numEdges, numNodes):
     
     #data
     #gen network - p is pdf and edges is set of edges
-    graph, p, edges = generateNetwork(numEdges, numNodes, probType)
+    graph, p, edges = generateNetwork(numEdges, numNodes, probType, seed)
     S = {}
     E = {}
     O = {}
@@ -110,6 +110,7 @@ def MIP(probType, K, numEdges, numNodes):
     
     return mip.objVal, graph, time
     
+MIP(UNIFORM, 1, 19, 15)
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]
 #gs = {}
