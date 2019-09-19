@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Aug 22 16:08:57 2019
-
 @author: Daniel
 """
 from collections import defaultdict
@@ -218,7 +217,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 #            print('Second Gen: ')
 #            displayLattice(graph = graph)
 #            graph, numEdges = adjust2(graph, numEdges, a)
-        if numEdges < a or len(graph.keys()) < b:
+        if numEdges < a or getNumNodes(graph) < b:
             graph, _, _ = generateNetwork(a, b, probType)
         crowded, _ = checkCrowded(graph)
         if crowded:
@@ -240,7 +239,6 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 
     # assign probabilities to existing edges in graph
     pUn, pNon, edgeNums = generateProbabilities(graph, probType)
-    print(edgeNums)
     edges = genEdges(graph)
     prob = {}
     if pUn is not None:
@@ -273,7 +271,6 @@ def adjust1(graph, numEdges, a):
 #    print(found, ' edges added')
 #    print('Post Adjust 1: ', numEdges)
     return graph, numEdges
-
 
 def adjust2(graph, numEdges, a):
 #    print('Edge Adjust 2: ', numEdges)
@@ -353,21 +350,22 @@ def checkCrowded(graph):
 #                    return 1
 #    return 0
 def genEdges(graph):
-    edges = set()
-    for k, v in graph.items():
-        for i in v:
-            if (k, i) not in edges and (i, k) not in edges:
-                edges.add((k, i))
+    edges = []
+    e = 0
+    for i in graph.keys():
+        for j in graph[i]:
+            if (i, j) not in edges and (j, i) not in edges:
+                edges.append((i, j))
+                e += 1
     return edges
 
 
 def genArcs(graph):
-    arcs = set()
-    for k, v in graph.items():
-        for i in v:
-            arcs.add((k, i))
-            arcs.add((i, k))
-    print("Arcs:", arcs, len(arcs))
+    arcs = []
+    for i in graph.keys():
+        for j in graph[i]:
+            if j is not None and (i, j) not in arcs:
+                arcs.append((i, j))
     return arcs
 
 
@@ -382,40 +380,6 @@ def getNumEdges(graph):
 def getNumNodes(graph):
     return len(graph.keys())
 
-
-def displayGraph(graph):
-
-    numEdges = getNumEdges(graph)
-    numNodes = getNumNodes(graph)
-
-    if numEdges / numNodes > 2:
-        plot.title('Dense')
-        plot.axis()
-        dense = nx.Graph(graph)
-        nx.draw_networkx(dense)
-    else:
-        plot.title('Sparse')
-        plot.axis([-1, 11, -1, 11])
-
-        for key in graph.keys():
-            keyCoords = indexToXY(key)
-            for node in graph[key]:
-                nodeCoord = indexToXY(node)
-                plot.plot(
-                    [keyCoords[0], nodeCoord[0]],
-                    [keyCoords[1], nodeCoord[1]],
-                    'b.-'
-                )
-
-    plot.show()
-
-if __name__ == "__main__":
-    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
-    denseInstance, p2, _ = generateNetwork(28, 12, 0, 2121208622)
-
-    # displayLattice(graph=sparseInstance)
-    # displayGraph(denseInstance)
-    # displayGraph(sparseInstance)
 
 #to test if networks generated properly, run following script which generates
 #1000 different networks and checks if they produce the right num of 
@@ -454,19 +418,13 @@ def genMult(a, b, probType, N):
 #if len(discon) > 0:
 #    print('**************************DISCONNECTED******************************')
 
-    
-    
-    
-#if __name__ == "__main__":
-##    sparseInstance, p1, _ = generateNetwork(24, 18, 0)
-#    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
-#    print('Nodes: ', len(sparseInstance.keys()))
-#    edges = genEdges(sparseInstance)
-#    numedges = len(edges)
-#    print('Edges: ', numedges)
-#    denseInstance, p2, _ = generateNetwork(30, 12, 1)
-#
-##    displayLattice(graph=sparseInstance)
+
+if __name__ == "__main__":
+
+    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
+    denseInstance, p2, _ = generateNetwork(30, 12, 1)
+
+#    displayLattice(graph=sparseInstance)
 #
 #    dense = nx.Graph(denseInstance)
 #
