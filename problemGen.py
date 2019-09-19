@@ -100,9 +100,9 @@ def generateProbabilities(graph, probType):
     pUn = None  # uniform prob
     pNon = None  # non-uniform prob
     # number of nodes
-    numNodes = sum(n for n in graph.keys())
+    numNodes = getNumNodes(graph)
     # number of edges
-    numEdges = sum(len(graph[n]) for n in graph.keys())//2
+    numEdges = getNumEdges(graph)
     if not probType:
         # gen uniformly dist. probs
         pUn = 1/numEdges
@@ -219,50 +219,47 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 
     # assign probabilities to existing edges in graph
     pUn, pNon, edgeNums = generateProbabilities(graph, probType)
+    print(edgeNums)
     edges = genEdges(graph)
     prob = {}
     if pUn is not None:
         # uniform case
-        prob[pUn] = [e for e in edges.values()]
+        prob[pUn] = [e for e in edges]
     else:
         generatedTypes = [0, 0, 0]
         for p in pNon:
             prob[p] = []
-        for e in edges.keys():
+        for e in edges:
             edgeType = randint(0, 2)
             while generatedTypes[edgeType] == edgeNums[edgeType]:
                 edgeType = randint(0, 2)
-            prob[pNon[edgeType]].append(edges[e])
+            prob[pNon[edgeType]].append(e)
             generatedTypes[edgeType] += 1
 
     return graph, prob, edges
 
 
 def genEdges(graph):
-    edges = {}
-    e = 0
-    for i in graph.keys():
-        for j in graph[i]:
-            if (i, j) not in edges.values() and (j, i) not in edges.values():
-                edges[e] = (i, j)
-                e += 1
+    edges = set()
+    for k, v in graph.items():
+        for i in v:
+            if (k, i) not in edges and (i, k) not in edges:
+                edges.add((k, i))
     return edges
 
 
 def genArcs(graph):
-    arcs = []
-    for i in graph.keys():
-        for j in graph[i]:
-            if j is not None and (i, j) not in arcs:
-                arcs.append((i, j))
+    arcs = set()
+    for k, v in graph.items():
+        for i in v:
+            arcs.add((k, i))
+            arcs.add((i, k))
+    print(arcs, len(arcs))
     return arcs
 
 
 def genNodes(graph):
-    nodes = []
-    for n in graph:
-        nodes.append(n)
-    return nodes
+    return list(graph.keys())
 
 
 def S(a, n):
@@ -282,38 +279,52 @@ def E(a, n):
 
 
 def O(a, e):
-    #does edge e contain arc a
+    # does edge e contain arc a
     if (a[0] == e[0] and a[1] == e[1]) or (a[1] == e[0] and a[0] == e[1]):
         return 1
     else:
         return 0
 
-if __name__ == "__main__":
-    sparseInstance, p1, _ = generateNetwork(24, 18, 0)
-    denseInstance, p2, _ = generateNetwork(28, 12, 1)
 
-    displayLattice(graph=sparseInstance)
+def getNumEdges(graph):
+    return sum(len(graph[n]) for n in graph.keys())//2
 
-    dense = nx.Graph(denseInstance)
 
-    fig, (ax1, ax2) = plot.subplots(1, 2)
+def getNumNodes(graph):
+    return len(graph.keys())
 
-    ax1.set_title('Dense')
-    ax1.set_axis_off()
-    nx.draw_networkx(dense, ax=ax1)
 
-    ax2.set_title('Sparse')
-    ax2.set_xlim(-1, 10)
-    ax2.set_ylim(-1, 10)
+def displayGraph(graph):
 
-    for key in sparseInstance.keys():
-        keyCoords = indexToXY(key)
-        for node in sparseInstance[key]:
-            nodeCoord = indexToXY(node)
-            ax2.plot(
-                [keyCoords[0], nodeCoord[0]],
-                [keyCoords[1], nodeCoord[1]],
-                'b.-'
+    numEdges = getNumEdges(graph)
+    numNodes = getNumNodes(graph)
+
+    if numEdges / numNodes > 2:
+        plot.title('Dense')
+        plot.axis()
+        dense = nx.Graph(graph)
+        nx.draw_networkx(dense)
+    else:
+        plot.title('Sparse')
+        plot.axis([-1, 11, -1, 11])
+
+        for key in graph.keys():
+            keyCoords = indexToXY(key)
+            for node in graph[key]:
+                nodeCoord = indexToXY(node)
+                plot.plot(
+                    [keyCoords[0], nodeCoord[0]],
+                    [keyCoords[1], nodeCoord[1]],
+                    'b.-'
                 )
 
     plot.show()
+
+if __name__ == "__main__":
+    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
+    denseInstance, p2, _ = generateNetwork(28, 12, 0, 2121208622)
+
+    # dense = nx.Graph(denseInstance)
+    # displayLattice(graph=sparseInstance)
+    # displayGraph(denseInstance)
+    # displayGraph(sparseInstance)
