@@ -363,7 +363,7 @@ def genEdges(graph):
 
 def genArcs(graph):
     arcs = []
-    for i in graph.keys():
+    for i in graph:
         for j in graph[i]:
             if j is not None and (i, j) not in arcs:
                 arcs.append((i, j))
