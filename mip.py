@@ -1,8 +1,5 @@
-from gurobipy import *
-from problemGen import generateNetwork, genArcs, genNodes, displayLattice, genMult
-from collections import defaultdict
-from fractions import Fraction
-import math
+from gurobipy import quicksum, GRB, Model
+from problemGen import generateNetwork, genArcs, genNodes, displayGraph, genMult
 from time import clock
 
 def genNeighbours(edges):
@@ -17,7 +14,10 @@ def genNeighbours(edges):
                 neighbours[edges[m1]].append(edges[m2])
     return neighbours
 
-def MIP(probType, K, numEdges, numNodes):
+UNIFORM = 0
+NON_UNIFORM = 1
+
+def MIP(probType, K, numEdges, numNodes, seed=None):
 #    startgen = clock()
     #min time for searchers to search every arc
     maxTime = 50
@@ -34,7 +34,7 @@ def MIP(probType, K, numEdges, numNodes):
     
     #data
     #gen network - p is pdf and edges is set of edges
-    graph, p, edges = generateNetwork(numEdges, numNodes, probType)
+    graph, p, edges = generateNetwork(numEdges, numNodes, probType, seed)
     S = {}
     E = {}
     O = {}
@@ -110,6 +110,7 @@ def MIP(probType, K, numEdges, numNodes):
     
     return mip.objVal, graph, time
     
+MIP(UNIFORM, 1, 19, 15)
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]
 #gs = {}
