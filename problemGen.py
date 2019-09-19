@@ -328,36 +328,12 @@ def genArcs(graph):
         for i in v:
             arcs.add((k, i))
             arcs.add((i, k))
-    print(arcs, len(arcs))
+    print("Arcs:", arcs, len(arcs))
     return arcs
 
 
 def genNodes(graph):
     return list(graph.keys())
-
-
-def S(a, n):
-    # does arc a start on node n
-    if a[0] == n:
-        return 1
-    else:
-        return 0
-
-
-def E(a, n):
-    # does arc a end on node n
-    if a[1] == n:
-        return 1
-    else:
-        return 0
-
-
-def O(a, e):
-    # does edge e contain arc a
-    if (a[0] == e[0] and a[1] == e[1]) or (a[1] == e[0] and a[0] == e[1]):
-        return 1
-    else:
-        return 0
 
 
 def getNumEdges(graph):
