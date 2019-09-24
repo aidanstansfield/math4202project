@@ -34,7 +34,7 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
     
     #data
     #gen network - p is pdf and edges is set of edges
-    graph, p, edges = generateNetwork(numEdges, numNodes, probType, seed)
+    graph, p, edges, graphSeed = generateNetwork(numEdges, numNodes, probType, seed)
 #    displayGraph(graph)
     S = {}
     E = {}
