@@ -109,9 +109,10 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
     
 #    MIPtime = startMip - endMip
     
-    return mip.objVal, graph, time
+    return mip, graph, time
     
-obj, graph, _ = MIP(UNIFORM, 20, 1000, 500)
+mip, graph, _ = MIP(UNIFORM, 20, 100, 50)
+
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]
 #gs = {}
