@@ -63,7 +63,7 @@ def displayGraph(graph):
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
 
-    if numEdges / numNodes > 2:
+    if numEdges / numNodes >= 2:
         plot.title('Dense')
         plot.axis()
         dense = nx.Graph(graph)
@@ -238,6 +238,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     if a/b < 2:
         graph = generateSparse(a, b, graph)
         edgeList = genEdges(graph)
+
         numEdges = len(edgeList)
         crowded, _ = checkCrowded(graph)
         while getNumEdges(graph) < a or getNumNodes(graph) < b or crowded:
@@ -275,7 +276,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
             prob[e] = pNon[edgeType]
             generatedTypes[edgeType] += 1
 
-    return graph, prob, edges
+    return graph, prob, edges, initSeed
 
 
 def adjust1(graph, numEdges, a):
@@ -292,6 +293,7 @@ def adjust1(graph, numEdges, a):
 #    print(found, ' edges added')
 #    print('Post Adjust 1: ', numEdges)
     return graph, numEdges
+
 
 def adjust2(graph, numEdges, a):
 #    print('Edge Adjust 2: ', numEdges)
@@ -315,6 +317,7 @@ def adjust2(graph, numEdges, a):
                     break
 #    print('Post Adjust 2: ', numEdges)
     return graph, numEdges
+
 
 def checkCrowded(graph):
     for n in graph.keys():
@@ -411,7 +414,7 @@ def genMult(a, b, probType, N):
     es = {}
     bad = []
     for i in range(N):
-        gs[i], _, es[i] = generateNetwork(a, b, probType)
+        gs[i], _, es[i], _ = generateNetwork(a, b, probType)
         if len(es[i]) < a:
             bad.append(i)
             print('####################### TOO FEW EDGES ######################')
@@ -439,11 +442,33 @@ def genMult(a, b, probType, N):
 #    print('**************************DISCONNECTED******************************')
 
 
+# Write a graph to a file
+def writeGraph(graph, seed):
+    nodes = getNumNodes(graph)
+    edges = getNumEdges(graph)
+    graphClass = "M" + str(edges) + "N" + str(nodes)
+    fileName = graphClass+"_"+str(seed)+".txt"
+    
+    with open(fileName, 'w') as f:
+        f.write(str(dict(graph)))
+
+
+def readGraph(file):
+    graph = defaultdict(set)
+    try:
+        with open(file, 'r') as f:
+            graph = f.read()
+    except FileNotFoundError as fne:
+        print("File does not exist.")
+    return graph
+
 if __name__ == "__main__":
 
-    sparseInstance, p1, _ = generateNetwork(24, 18, 0)
-    denseInstance, p2, _ = generateNetwork(300, 150, 0)
+    sparseInstance, p1, _, _ = generateNetwork(24, 18, 0)
+    denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
 
+    writeGraph(denseInstance, denseSeed)
+    readGraph('fail')
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
     # displayGraph(sparseInstance)
