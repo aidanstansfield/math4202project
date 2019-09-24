@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Aug 22 16:08:57 2019
-
 @author: Daniel
 """
 from collections import defaultdict
@@ -111,9 +110,9 @@ def generateProbabilities(graph, probType):
     pUn = None  # uniform prob
     pNon = None  # non-uniform prob
     # number of nodes
-    numNodes = sum(n for n in graph.keys())
+    numNodes = getNumNodes(graph)
     # number of edges
-    numEdges = sum(len(graph[n]) for n in graph.keys())//2
+    numEdges = getNumEdges(graph)
     if not probType:
         # gen uniformly dist. probs
         pUn = 1/numEdges
@@ -218,7 +217,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 #            print('Second Gen: ')
 #            displayLattice(graph = graph)
 #            graph, numEdges = adjust2(graph, numEdges, a)
-        if numEdges < a or len(graph.keys()) < b:
+        if numEdges < a or getNumNodes(graph) < b:
             graph, _, _ = generateNetwork(a, b, probType)
         crowded, _ = checkCrowded(graph)
         if crowded:
@@ -363,7 +362,7 @@ def genEdges(graph):
 
 def genArcs(graph):
     arcs = []
-    for i in graph.keys():
+    for i in graph:
         for j in graph[i]:
             if j is not None and (i, j) not in arcs:
                 arcs.append((i, j))
@@ -371,10 +370,16 @@ def genArcs(graph):
 
 
 def genNodes(graph):
-    nodes = []
-    for n in graph:
-        nodes.append(n)
-    return nodes
+    return [n for n in graph.keys() if len(graph[n]) > 0]
+
+
+def getNumEdges(graph):
+    return sum(len(graph[n]) for n in graph.keys())//2
+
+
+def getNumNodes(graph):
+    return len(graph.keys())
+
 
 #to test if networks generated properly, run following script which generates
 #1000 different networks and checks if they produce the right num of 
@@ -414,19 +419,13 @@ def genMult(a, b, probType, N):
 #if len(discon) > 0:
 #    print('**************************DISCONNECTED******************************')
 
-    
-    
-    
-#if __name__ == "__main__":
-##    sparseInstance, p1, _ = generateNetwork(24, 18, 0)
-#    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
-#    print('Nodes: ', len(sparseInstance.keys()))
-#    edges = genEdges(sparseInstance)
-#    numedges = len(edges)
-#    print('Edges: ', numedges)
-#    denseInstance, p2, _ = generateNetwork(30, 12, 1)
-#
-##    displayLattice(graph=sparseInstance)
+
+if __name__ == "__main__":
+
+    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
+    denseInstance, p2, _ = generateNetwork(30, 12, 1)
+
+#    displayLattice(graph=sparseInstance)
 #
 #    dense = nx.Graph(denseInstance)
 #
