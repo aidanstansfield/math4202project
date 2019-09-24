@@ -58,12 +58,32 @@ def displayLattice(size=GRID_SIZE, graph=None):
         print()
 
 
-# Output of this can be put in here:
-# https://csacademy.com/app/graph_editor/ to visualise
 def displayGraph(graph):
-    for k, v in graph.items():
-        for i in v:
-            print(k, i)
+
+    numEdges = getNumEdges(graph)
+    numNodes = getNumNodes(graph)
+
+    if numEdges / numNodes > 2:
+        plot.title('Dense')
+        plot.axis()
+        dense = nx.Graph(graph)
+        nx.draw_networkx(dense)
+    else:
+        plot.title('Sparse')
+        plot.axis([-1, 11, -1, 11])
+
+        for key in graph.keys():
+            keyCoords = indexToXY(key)
+            for node in graph[key]:
+                nodeCoord = indexToXY(node)
+                plot.plot(
+                    [keyCoords[0], nodeCoord[0]],
+                    [keyCoords[1], nodeCoord[1]],
+                    'b.-'
+                )
+
+    plot.show()
+
 
 def genLeaf(graph):
     leaf = []
@@ -76,6 +96,7 @@ def genLeaf(graph):
 #        if len(neigh[m]) == 1:
 #            leaf.append(m)
     return leaf
+
 
 # Return the indexes of the neighbour of a point in order clockwise
 # Up, right, down, left
@@ -141,19 +162,58 @@ def generateProbabilities(graph, probType):
 
 
 def generateDense(edges, nodes, graph):
-    for i in range(nodes):
-        graph[nodes] = set()
     edgesMade = 0
+    for i in range(1, nodes+1):
+        graph[i] = set()
 
     while edgesMade < edges:
         node1 = randint(1, nodes)
         node2 = randint(1, nodes)
         while node2 == node1:
             node2 = randint(1, nodes)
-        if node2 not in graph[node1] and node1 not in graph[node2]:
+        if (node2 not in graph[node1]) or (node1 not in graph[node2]):
             graph[node1].add(node2)
             graph[node2].add(node1)
             edgesMade += 1
+    return graph
+
+
+def generateSparse(edges, nodes, graph):
+    # Sparse network - like a manhattan network
+    #randomly choose a starting point on the grid
+    start = randint(0, GRID_SIZE ** 2 - 1)
+    #list of nodes we have visited (and thus will be added to the network)
+    visited = [start]
+    graph[start] = set()
+    #loop will run until we have the right number of nodes/edges in graph
+    while len(visited) < nodes:
+        #pick random element in visited (on first run, this will just be
+        #the start node)
+        current = choice(visited)
+        #find neighbours of current node
+        validNeighbours = tuple(x for x in gridNeighbours(current) if x
+                                is not None)
+        #add neighbours that we haven't visited to a list
+        nList = []
+        for v in validNeighbours:
+            if v not in visited:
+                nList.append(v)
+        # print(nList)
+        #randnum is number of neighbours we add (to give graph more
+        #spread out/random look)
+        randNum = randint(0, len(nList))
+        for n in range(randNum):
+            #randomly choose a neighbour
+            cand = choice(nList)
+            if cand not in visited:
+                #add neighbour node to graph connected to current node
+                if len(visited) < nodes:
+                    graph[current].add(cand)
+                    graph[cand].add(current)
+                    visited.append(cand)
+        numEdges = getNumEdges(graph)
+        if numEdges < edges:
+            graph, numEdges = adjust1(graph, numEdges, edges)
     return graph
 
 
@@ -176,64 +236,25 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     # and the nodes they connect to as values (edges are pairs of nodes)
     graph = defaultdict(set)
     if a/b < 2:
-        # Sparse network - like a manhattan network
-        #randomly choose a starting point on the grid
-        start = randint(0, GRID_SIZE ** 2 - 1)
-        #list of nodes we have visited (and thus will be added to the network)
-        visited = [start]
-        graph[start] = set()
-        #loop will run until we have the right number of nodes/edges in graph
-        while len(visited) < b:
-            #pick random element in visited (on first run, this will just be
-            #the start node)
-            current = choice(visited)
-            #find neighbours of current node
-            validNeighbours = tuple(x for x in gridNeighbours(current) if x 
-                                    is not None)
-            #add neighbours that we haven't visited to a list
-            nlist = []
-            for v in validNeighbours:
-                if v not in visited:
-                    nlist.append(v)
-            #randnum is number of neighbours we add (to give graph more
-            #spread out/random look)
-            randNum = randint(0, len(nlist))
-            for n in range(randNum):
-                #randomly choose a neighbour
-                cand = choice(nlist)
-                if cand not in visited:
-                    #add neighbour node to graph connected to current node
-                    if len(visited) < b:
-                        graph[current].add(cand)
-                        graph[cand].add(current)
-                        visited.append(cand)
-        edges = genEdges(graph)
-        numEdges = len(edges)
-        if numEdges < a:
-#            print('Initial Gen: ')
-#            displayLattice(graph = graph)
-            graph, numEdges = adjust1(graph, numEdges, a)
-#        if numEdges < a:
-#            print('Second Gen: ')
-#            displayLattice(graph = graph)
-#            graph, numEdges = adjust2(graph, numEdges, a)
-        if numEdges < a or getNumNodes(graph) < b:
-            graph, _, _ = generateNetwork(a, b, probType)
+        graph = generateSparse(a, b, graph)
+        edgeList = genEdges(graph)
+        numEdges = len(edgeList)
         crowded, _ = checkCrowded(graph)
-        if crowded:
-            graph, _, _ = generateNetwork(a, b, probType)
+        while getNumEdges(graph) < a or getNumNodes(graph) < b or crowded:
+            graph.clear()
+            graph = generateSparse(a, b, graph)
+
+            crowded, _ = checkCrowded(graph)
     else:
         # Dense network
         graph = generateDense(a, b, graph)
-
         # use network x to check if it's connected
         connectedTest = nx.Graph(graph)
-
         # If the generated dense graph is disconnected, generate a new one
         while not nx.is_connected(connectedTest):
             graph.clear()
             graph = generateDense(a, b, graph)
-            connectedTest = nx.Graph(denseInstance)
+            connectedTest = nx.Graph(graph)
 
         connectedTest = None
 
@@ -326,7 +347,6 @@ def checkCrowded(graph):
     return 0, found
                 
                     
-        
 #functions used to check for and fix disconnectedness in network- bit touchy 
 #sometimes hence commented
 #def fixDiscon(graph):
@@ -342,7 +362,7 @@ def checkCrowded(graph):
 #                            graph[i].add(m)
 #    return graph
 #
-#def checkDiscon(graph):
+# def checkDiscon(graph):
 #    for n in graph.keys():
 #        if len(graph[n]) == 1:
 #            for m in graph[n]:
@@ -421,31 +441,9 @@ def genMult(a, b, probType, N):
 
 if __name__ == "__main__":
 
-    sparseInstance, p1, _ = generateNetwork(24, 18, 1)
-    denseInstance, p2, _ = generateNetwork(30, 12, 1)
+    sparseInstance, p1, _ = generateNetwork(24, 18, 0)
+    denseInstance, p2, _ = generateNetwork(300, 150, 0)
 
-#    displayLattice(graph=sparseInstance)
-#
-#    dense = nx.Graph(denseInstance)
-#
-#    fig, (ax1, ax2) = plot.subplots(1, 2)
-#
-#    ax1.set_title('Dense')
-#    ax1.set_axis_off()
-#    nx.draw_networkx(dense, ax=ax1)
-#
-#    ax2.set_title('Sparse')
-#    ax2.set_xlim(-1, 10)
-#    ax2.set_ylim(-1, 10)
-#
-#    for key in sparseInstance.keys():
-#        keyCoords = indexToXY(key)
-#        for node in sparseInstance[key]:
-#            nodeCoord = indexToXY(node)
-#            ax2.plot(
-#                [keyCoords[0], nodeCoord[0]],
-#                [keyCoords[1], nodeCoord[1]],
-#                'b.-'
-#                )
-#
-#    plot.show()
+    # displayGraph(denseInstance)
+    # displayLattice(graph=sparseInstance)
+    # displayGraph(sparseInstance)
