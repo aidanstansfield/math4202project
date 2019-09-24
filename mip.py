@@ -35,6 +35,7 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
     #data
     #gen network - p is pdf and edges is set of edges
     graph, p, edges = generateNetwork(numEdges, numNodes, probType, seed)
+#    displayGraph(graph)
     S = {}
     E = {}
     O = {}
@@ -110,7 +111,7 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
     
     return mip.objVal, graph, time
     
-MIP(UNIFORM, 1, 19, 15)
+obj, graph, _ = MIP(UNIFORM, 20, 1000, 500)
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]
 #gs = {}
