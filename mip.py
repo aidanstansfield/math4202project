@@ -1,6 +1,5 @@
 from gurobipy import quicksum, GRB, Model
 from problemGen import generateNetwork, genArcs, genNodes, displayGraph, genMult
-from time import clock
 
 def genNeighbours(edges):
     M = range(len(edges))
@@ -48,7 +47,7 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
     #define values for functions S, E and O and store in dict.
     for l in L:
         for m in M:
-            if ((arcs[l][0] == edges[m][0]) and (arcs[l][1] == edges[m][1])) or ((arcs[l][0] == edges[m][1]) and (arcs[l][1] == edges[m][0])):
+            if arcs[l] == edges[m] or arcs[l] == edges[m][::-1]:
                 O[l, m] = 1
             else:
                 O[l, m] = 0
@@ -62,11 +61,6 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
             else:
                 S[l, n] = 0
                 E[l, n] = 0
-    
-    #    endgen = clock()
-    #    genTime = startgen - endgen
-    
-    #    startMIP = clock()
     
     mip = Model("Model searchers searching for a randomly distributed immobile" \
                 "target on a unit network")
