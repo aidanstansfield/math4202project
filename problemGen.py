@@ -464,12 +464,12 @@ def readGraph(file):
         print("File does not exist.")
     return graph
 
-if __name__ == "__main__":
-    sparseInstance, p1, _, _ = generateNetwork(24, 18, 0)
-    denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
-
-    writeGraph(denseInstance, denseSeed)
-    readGraph('fail')
+#if __name__ == "__main__":
+#    sparseInstance, p1, _, _ = generateNetwork(24, 18, 0)
+#    denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
+#
+#    writeGraph(denseInstance, denseSeed)
+#    readGraph('fail')
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
     # displayGraph(sparseInstance)

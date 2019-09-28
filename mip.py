@@ -105,7 +105,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
     
     return mip, graph, time
     
-mip, graph, _ = MIP(UNIFORM, 1, 19, 15)
+#mip, graph, _ = MIP(UNIFORM, 1, 19, 15)
 
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]

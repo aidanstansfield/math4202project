@@ -1,142 +1,168 @@
 from gurobipy import *
 from mip import *
 from problemGen import *
+import itertools
+from collections import defaultdict
+import msvcrt
 
-#def genFeas(graph, prob, maxTime, S, E, O, L, M, N, arcs):
-#    canReach = {}
-#    for l in L:
-#        t = 1
-#        canReach[l] = {1: [i for i in L if arcs[i][0] == arcs[l][1]]}
-#        while t < maxTime:
-#            print(t)
-#            canReach[l][t + 1] = []
-#            for i in L:
-#                for j in canReach[l][t]:
-#                    if arcs[i][0] == arcs[j][1]:
-#                        canReach[l][t + 1].append(i)
-#            t += 1
-#        print('Done for arc ', l)
-#                
-#                
-##    Successors = {}
-#    return canReach
 
-def belowCap(ls, K):
-    if len(ls) <= K:
-        return True
-    else:
-        return False
-    
-def isSearched(ls, m, O):
-    searched = 0
-    for l in ls:
-        if O[l, m]:
-            searched = 1
-    return searched
+#update which edges have been explored
+def updateSearch(path, unexplored, O):
+    temp = []
+    for e in unexplored:
+        if e not in path and (e[1], e[0]) not in path:
+            temp.append(e)
+    return temp
 
-def allSearched(ls, M):
-    numSearched = 0
-    for m in M:
-        if O[]
-
-def genFeas(graph, prob, K, maxTime, S, E, O, L, M, N, T, arcs):
-#    reach = {(n, l): {t: [ls, ys, alphas]}
-#    reach = {(n, l): {t: [] for t in T[1:]} for n in N for l in L if S[l, n]}
-    successors = genSuccessors(graph, arcs, S, E, O, L, M, N)
-    pathList = {1: l for l in L}
-    
-#    reach = {}
-#    for l in L:
-#        temp = [arcs[l]]
-#        for t in T[1:]:
-#            for x in L:
-#                for xx in temp:
-#                    if arcs[x] in successors[xx]:
-                        
-#    for l in L:
-#        reach[arcs[l]] = {}
-#        for t in T[1:]:
-#            reach[arcs[l]][t] = []
-#            for x in L:
-#                if t == 1 and arcs[x] in successors[arcs[l]]:
-#                    reach[arcs[l]][t].append(arcs[x])
-#                    print('added for ', l, t, x)
-#                elif t > 1:
-#                    for xx in reach[arcs[l]][t - 1]:
-#                        if arcs[x] in successors[xx]:
-#                            reach[arcs[l]][t].append(arcs[x])
-#    for k in [i for i in reach.keys()]:
-#        if len(reach[k][1]) == 0:
-#            reach.pop(k)
-#                        if (len(reach[l, n][t]) == 0 and x in successors[l]) or\
-#                            x in [successors[a] for a in reach[l, n][t - 1]]:
-#                            reach[l, n][t].append(x)
-#        {t: [x for x in L if all(
-#                [])] 
-#        for t in T[1:]} for n in N for l in L if S[l, n]}
-    return successors
-        
-    
-def genSuccessors(graph, arcs, S, E, O, L, M, N):
+#generate a list of all arcs that are connected to each arc
+def genSuccessors(graph, arcs):
     successors = {}
-#    for l in L:
-#        successors[arcs[l]] = []
-#        for i in L:
-#            if arcs[l][1] == arcs[i][0]:
-#                successors[arcs[l]].append(arcs[i])
-    for l in L:
+    for a in arcs:
         suclist = []
-        for x in L:
-            if arcs[l][1] == arcs[x][0]:
-                suclist.append(arcs[x])
-        successors[arcs[l]] = suclist
+        for x in arcs:
+            if a[1] == x[0]:
+                suclist.append(x)
+        successors[a] = suclist
     return successors
 
-def DCG(probType, K, numEdges, numNodes, maxTime, seed = None):
-    M = range(0, numEdges)
-    N = range(0, numNodes)
-    L = range(0, 2 * numEdges)
-    T = range(0, maxTime + 1)
-    
-    #data
-    #gen network - p is pdf and edges is set of edges
-    graph, prob, edges = generateNetwork(numEdges, numNodes, probType, seed)
-    print('Done Gen')
-#    displayGraph(graph)
+#generate a feasible region
+def genFeas(graph, prob, K, Arcs, Edges, Nodes, maxTime):
     S = {}
     E = {}
     O = {}
-    #gen set of arcs
-    arcs = genArcs(graph)
-    #gen set of nodes
-    nodes = genNodes(graph)
     #define values for functions S, E and O and store in dict.
-    for l in L:
-        for m in M:
-            if ((arcs[l][0] == edges[m][0]) and (arcs[l][1] == edges[m][1])) or ((arcs[l][0] == edges[m][1]) and (arcs[l][1] == edges[m][0])):
-                O[l, m] = 1
+    for a in Arcs:
+        for e in Edges:
+            if ((a[0] == e[0]) and (a[1] == e[1])) or ((a[0] == e[1]) and (a[1] == e[0])):
+                O[a, e] = 1
             else:
-                O[l, m] = 0
-        for n in N:
-            if arcs[l][0] == nodes[n]:
-                S[l, n] = 1
-                E[l, n] = 0
-            elif arcs[l][1] == nodes[n]:
-                E[l, n] = 1
-                S[l, n] = 0
+                O[a, e] = 0
+        for n in Nodes:
+            if a[0] == n:
+                S[a, n] = 1
+                E[a, n] = 0
+            elif a[1] == n:
+                E[a, n] = 1
+                S[a, n] = 0
             else:
-                S[l, n] = 0
-                E[l, n] = 0
-    print('Done Prelim')
-    return graph, prob, maxTime, S, E, O, L, M, N, arcs
+                S[a, n] = 0
+                E[a, n] = 0
+    start = None
+    #dictionary of states
+    A = {1: []}
+    #dictionary of search history with t values as keys
+    H = {1: []}
+    #find arcs connected to leaf nodes in network
+    leafArcs = genLeaf(graph)
+    #initially, all edges unexplored
+    initUnexp= [e for e in Edges]
+    
+    #split into cases to define starting situations
+    #if num searchers = num leaf arcs, then the only starting situation is
+    #to start in the state containing every leaf arc
+    if len(leafArcs) == K:
+        print('LA = K')
+        start = leafArcs
+        unexplored = updateSearch(start, initUnexp, O)
+        A[1] = [start]
+        H[1] = unexplored
+    #if there are more leaf arcs than searchers, valid starting states will be
+    #every combination of length K of leaf arcs
+    elif len(leafArcs) > K:
+        print('LA > K')
+        start = list(itertools.combinations(leafArcs, K))
+        for s in range(len(start)):
+            unexplored = updateSearch(start[s], initUnexp, O)
+            A[1].append([start[s], unexplored])
+    #if less leaf arcs than searchers, add the leaf arcs to each valid state 
+    #and generate all combinations of adding arcs in to fill the gap
+    else:
+        print('LA < K')
+        #candArcs is list of non-leaf arcs (arcs we will add on the end of the
+        #state)
+        candArcs = []
+        for a in Arcs:
+            if a in leafArcs:
+                pass
+            else:
+                candArcs.append(a)
+        #add list of leaf Arcs to end of candArcs
+        candArcs.append(leafArcs)
+        #this will generate a list of all combinations of members of candArcs
+        #we only want the ones containing the list of leaf arcs
+        start = list(itertools.combinations(candArcs, K - len(leafArcs) + 1))
+        
+        #extract elements of start that contain leafArcs
+        temp = []
+        for s in range(len(start)):
+            slist = []
+            hasLeaf = 0
+            for x in start[s]:
+                if type(x) is list:
+                    for a in x:
+                        slist.append(a)
+                    hasLeaf = 1
+                else:
+                    slist.append(x)
+            if hasLeaf:
+                temp.append(slist)
+        start = temp
+        
+        for s in range(len(start)):
+            temp = initUnexp
+            unexplored = updateSearch(start[s], temp, O)
+            A[1].append(start[s])
+            H[1].append(unexplored)
+    #initialise predecessors
+    pred = {}
+    for r in range(len(A[1])):
+        #no predecessors for t = 1
+        pred[1, r] = []
+    if start is None:
+        print('*********************ERROR IN FINDING STARTING NODES ***\
+              **************************')
 
-maxTime = 50
-T = range(maxTime)
-K = 1
-g, prob, maxTime, S, E, O, L, M, N, arcs = DCG(0, 1, 19, 15, maxTime)
-successors = genFeas(g, prob, K, maxTime, S, E, O, L, M, N, T, arcs)
-#successors = genSuccessors(g, arcs, S, E, O, L, M, N)
-displayGraph(g)
-print(successors)
+    print('Number of Root Nodes: ', len(A[1]))
+    #this bit just stops the code so you can check the size of the problem
+    msvcrt.getch()
     
-    
+    #generate valid successors for each arc
+    succ = genSuccessors(graph, Arcs)
+   
+    print('Init Done')
+    t = 2
+    numFeas = 0
+    while t < maxTime:
+        print(len(A[t - 1]))
+        A[t] = []
+        H[t] = []
+        ind = -1
+        
+        for r in range(len(A[t - 1])):
+            #if there's more to explore
+            if len(H[t - 1]) > 0:
+                #only pick connected arcs
+                nextStep = list(itertools.product(*[succ[a] for a in A[t - 1][r]]))
+                for s in range(len(nextStep)):
+                    nextStep[s] = list(nextStep[s])
+                    ind += 1
+                    unexplored = updateSearch(nextStep[s], H[t - 1], O)
+                    pred[t, ind] = A[t - 1][r]
+                    A[t].append(nextStep[s])
+                    H[t].append(unexplored)
+            else:
+                numFeas += 1
+                print('Found Feasible Sol')
+            print('Done node ', r)
+        print('------------------Complete t = ', t, '----------------')
+        t += 1
+    print('Number of Feasible Solutions: ', numFeas)
+    displayGraph(graph)
+    return A
+
+g, prob, Edges, _ = generateNetwork(19, 15, 0)
+Arcs = genArcs(g)
+Nodes = genNodes(g)
+K = 5
+maxTime = math.ceil(2 * len(Edges)/K + 5)
+A = genFeas(g, prob, K, Arcs, Edges, Nodes, maxTime)
