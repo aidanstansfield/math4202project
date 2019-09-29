@@ -1,6 +1,11 @@
 from gurobipy import quicksum, GRB, Model
-from problemGen import generateNetwork, genArcs, genNodes, displayGraph, genMult
+from problemGen import generateNetwork, genArcs, genNodes, displayGraph, genMult, indexToXY
 from time import clock
+from matplotlib import pyplot, animation
+
+UNIFORM = 0
+NON_UNIFORM = 1
+
 
 def genNeighbours(edges):
     M = range(len(edges))
@@ -14,14 +19,46 @@ def genNeighbours(edges):
                 neighbours[edges[m1]].append(edges[m2])
     return neighbours
 
-UNIFORM = 0
-NON_UNIFORM = 1
 
+
+
+def visualiseStrategy(state, arcs, graph):
+    fig = pyplot.figure()
+    
+    def init():
+        displayGraph(graph)
+
+    
+    def animate(t):
+        if t==0:
+            return
+        
+        
+        for l in state["L"]:
+            if t>1 and state["X"][t-1,l].x > 0.9:
+                XCoords = [indexToXY(arcs[l][0])[0], indexToXY(arcs[l][1])[0]]
+                YCoords = [indexToXY(arcs[l][0])[1], indexToXY(arcs[l][1])[1]]
+                pyplot.plot(XCoords, YCoords, 'g-')
+            if state["X"][t,l].x > 0.9:
+                XCoords = [indexToXY(arcs[l][0])[0], indexToXY(arcs[l][1])[0]]
+                YCoords = [indexToXY(arcs[l][0])[1], indexToXY(arcs[l][1])[1]]
+                pyplot.annotate(str(arcs[l]), (sum(XCoords)/2 - 0.25, sum(YCoords)))
+                pyplot.plot(
+                    XCoords,
+                    YCoords,
+                    'r-',
+                )
+            
+        
+    
+    anim = animation.FuncAnimation(fig, animate, init_func=init,
+                               frames=state["maxTime"], interval = 500, repeat=False)
+    pyplot.show()
+    
 def MIP(probType, K, numEdges, numNodes, seed=None):
 #    startgen = clock()
     #min time for searchers to search every arc
     maxTime = 50
-    print('yes')
 #    graph, p, edges = genEx(probType)
 #    print('yes2')
 #    #sets
@@ -41,10 +78,10 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
     O = {}
     #gen set of arcs
     arcs = genArcs(graph)
-    print(arcs)
+#    print(arcs)
     #gen set of nodes
     nodes = genNodes(graph)
-    print('E: ', edges)
+#    print('E: ', edges)
     #define values for functions S, E and O and store in dict.
     for l in L:
         for m in M:
@@ -99,7 +136,7 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
                             T[1: -2] for n in N}
     #initially, no edges have been searched
     initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
-    #limit y so that every arc is searched by T
+    #limit y so that every edge is searched by T
     {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
     
     mip.optimize()
@@ -108,11 +145,18 @@ def MIP(probType, K, numEdges, numNodes, seed=None):
 #    endMIP = clock()
     
 #    MIPtime = startMip - endMip
+    state = {
+        "X": X,
+        "Y": Y,
+        "T": T,
+        "L": L,
+        "maxTime": maxTime
+    }
+    visualiseStrategy(state, arcs, graph)
     
     return mip, graph, time
     
-mip, graph, _ = MIP(UNIFORM, 20, 100, 50)
-
+mip, graph, _ = MIP(UNIFORM, 2, 19, 15, 7412256138686257758)
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]
 #gs = {}
