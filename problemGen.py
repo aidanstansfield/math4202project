@@ -70,7 +70,7 @@ def displayGraph(graph):
         nx.draw_networkx(dense)
     else:
         plot.title('Sparse')
-        plot.axis([-1, 11, -1, 11])
+        # plot.axis([-1, 11, -1, 11])
 
         for key in graph.keys():
             keyCoords = indexToXY(key)
@@ -81,6 +81,7 @@ def displayGraph(graph):
                     [keyCoords[1], nodeCoord[1]],
                     'b.-'
                 )
+            plot.annotate(str(key), (keyCoords[0], keyCoords[1]))
 
     plot.show()
 
@@ -460,16 +461,20 @@ def readGraph(file):
     try:
         with open(file, 'r') as f:
             graph = f.read()
+        f.read()
     except FileNotFoundError as fne:
         print("File does not exist.")
+    except ValueError as ve:
+        print("An error occured reading the file")
     return graph
 
-#if __name__ == "__main__":
-#    sparseInstance, p1, _, _ = generateNetwork(24, 18, 0)
-#    denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
-#
-#    writeGraph(denseInstance, denseSeed)
-#    readGraph('fail')
+if __name__ == "__main__":
+
+    sparseInstance, p1, _, _ = generateNetwork(24, 18, 0)
+    denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
+
+    # writeGraph(denseInstance, denseSeed)
+    # readGraph("M20N10_327504534.txt")
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
-    # displayGraph(sparseInstance)
+    displayGraph(sparseInstance)
