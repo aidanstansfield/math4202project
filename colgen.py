@@ -4,14 +4,125 @@ from problemGen import *
 import itertools
 from collections import defaultdict
 import msvcrt
+import time
 
-def updateSearch(path, unexplored, O):
-    temp = []
-    for e in unexplored:
-        if e not in path and (e[1], e[0]) not in path:
-            temp.append(e)
-    return temp
+#update which edges have been explored
+def updateSearch(r, s):
+    h = []
+    for e in s[1]:
+        if e not in r and (e[1], e[0]) not in r:
+            h.append(e)
+    return (r, tuple(h))
+#    temp = []
+#    for e in unexplored:
+#        if e not in path and (e[1], e[0]) not in path:
+#            temp.append(e)
+#    return temp
 
+def canReach(s, t, maxTime, K):
+    if len(s[1])/K > (maxTime - t)/K:
+        return False
+    else:
+        return True
+
+def getConnections(path, succ, K, t, maxTime, currentHist):
+    options = []
+    for a in path:
+        options.append(succ[a])
+    temp = list(itertools.product(*options))
+#    print(temp)
+    pathsucc = []
+    for s in temp:
+        testPath = updateSearch(s, (path, currentHist))
+        if not canReach(testPath, t, maxTime, K):
+            pass
+        doubleBacks = 0
+        for a in path:
+            for x in s:
+                if x[1] == a[0]:
+                    doubleBacks += 1
+#        print(doubleBacks)
+        if doubleBacks < 2:
+            pathsucc.append(s)
+    return pathsucc
+
+def inList(A, p, K):
+    instances = list(itertools.combinations(p, K))
+    found = 0
+    for i in instances:
+        if i in A:
+            found = 1
+    return found
+
+def findLeastDense(graph, Nodes, lb):
+    lessDense = []
+    minDense = min([len(graph[n]) for n in Nodes if len(graph[n]) > lb])
+    for n in Nodes:
+        if len(graph[n]) == minDense:
+            lessDense.append(n)
+    return lessDense
+
+def nextStep(s, t, maxTime, O, succ, K, A):
+    print('start search for time ', t)
+    if t == maxTime and len(s[1]) > 0:
+        return (t, 0, s)
+    elif t == maxTime and len(s[1]) == 0:
+        return (t, 1)
+    else:
+#        print('S0: ', s[0])
+#        print(s[1])
+        found = 0
+#        print('start search for con')
+        con = getConnections(s[0], succ, K, t, maxTime, s[1])
+        print(len(con))
+#        msvcrt.getch()
+        for r in con:
+#            print('route ', r)
+#            print('route ', r)
+#            print('update search')
+            ur = updateSearch(r, s)
+#            print(ur[1])
+#            print('H decreased by ', len(s[1]) - len(ur[1]))
+#            msvcrt.getch()
+#            print('check next')
+#            print(len(ur[1])/K)
+#            print((maxTime - t)/K)
+            if nextStep(ur, t + 1, maxTime, O, succ, K, A)[1] == 1:
+                print('*****************FOUND ONE**************************')
+                A[t + 1].append(ur)
+        if found:
+            return (t, 1, s)
+        else:
+            return (t, 0, s)
+#def getStartPred(path, tend, start, startSucc):
+#    if tend == 2:
+#        pred[tend, path] = []
+#        for s in start:
+#            if path in startSucc[s]:
+#                pred[tend, path].append(s)
+#        return pred
+#    else:
+#        pred[tend, path]
+    
+def getPred(t, start, succ, pathCombs, K):
+    if t == 2:
+        pred = defaultdict(list)
+        for s in start:
+            for p in pathCombs:
+                if p in getConnections(s, succ, K):
+                    pred[t, p].append(s)
+    else:
+        pred = getPred(t - 1, start, succ, pathCombs, K)
+        pathChoices = [k[1] for k in pred.keys() if k[0] == t - 1]
+        print(len(pathChoices))
+        for c in pathChoices:
+            for p in pathCombs:
+                if p in getConnections(c, succ, K):
+                    pred[t, p].append(c)
+    return pred
+
+
+#generate a list of all arcs that are connected to each arc
 def genSuccessors(graph, arcs):
     successors = {}
     for a in arcs:
@@ -22,29 +133,9 @@ def genSuccessors(graph, arcs):
         successors[a] = suclist
     return successors
 
-def getConnections(path, succ, K):
-    options = []
-    for a in path:
-        options.append(succ[a])
-    pathsucc = list(itertools.product(*options))
-    return pathsucc
-
-def getProb(p, path, hist, O):
-    prob = 0
-    for a in path:
-        for e in hist:
-            if O[a, e]:
-                prob += p[e]
-    return prob
-
-
-def genPred(start, path, succ, initUnexp, O, numEdges):
-    connected = getConnections(path, succ, K)
-    unexplored = updateSearch(path, initUnexp, O)
-    if len(unexplored) == numEdges:
-        pred = None
 
 def genFeas(graph, prob, K, Arcs, Edges, Nodes, maxTime):
+    TIMESTART = time.time()
     S = {}
     E = {}
     O = {}
@@ -65,80 +156,82 @@ def genFeas(graph, prob, K, Arcs, Edges, Nodes, maxTime):
             else:
                 S[a, n] = 0
                 E[a, n] = 0
-    succ = genSuccessors(graph, Arcs)
+    print('start leaf')
     leafArcs = genLeaf(graph)
-    initUnexp= [e for e in Edges]
-#    print('INITUNEXP: ', initUnexp)
+    print('Leaf Arcs: ', leafArcs)
+    initH = tuple(e for e in Edges)
+    print('IH: ', initH)
+    A = defaultdict(list)
+    succ = genSuccessors(graph, Arcs)
+    print('done prelim')
+    tmin = maxTime
     if len(leafArcs) == K:
         print('LA = K')
-        start = [leafArcs]
+        initr = tuple(leafArcs)
+        ns = nextStep([initr, initH], 1, tmin, O, succ, K, A)
+#        if ns[1] and ns[0] <= tmin:
+#            tmin = ns[0]
+        A[1].append([initr, initH])
     elif len(leafArcs) > K:
         print('LA > K')
-        start = list(itertools.combinations(leafArcs, K))
+        if K == 1:
+            combs = [tuple(l) for l in leafArcs]
+        else:
+            combs = list(itertools.combinations(leafArcs, K))
+        print(len(combs))
+        print(combs)
+        for r in combs:
+            print('start route ', r)
+            ns = nextStep([r, initH], 1, maxTime, O, succ, K, A)
+            if ns[1] and ns[0] <= tmin:
+                tmin = ns[0]
+                A[1].append([initr, initH])
     else:
         print('LA < K')
-        candArcs = []
-        for a in Arcs:
-            if a in leafArcs:
-                pass
-            else:
-                candArcs.append(a)
-        candArcs.append(leafArcs)
-#        print('cand', candArcs)
-#        for n in range(len(Arcs)):
-#            print(n)
-#            if Arcs[n] in leafArcs:
-#                candArcs.pop(n)
-        start = list(itertools.combinations(candArcs, K - len(leafArcs) + 1))
-#        print('BEFORE: ', start)
-        temp = []
-        for s in range(len(start)):
-            slist = []
-            hasLeaf = 0
-            for x in start[s]:
-                if type(x) is list:
-                    for a in x:
-                        slist.append(a)
-                    hasLeaf = 1
-                else:
-                    slist.append(x)
-            if hasLeaf:
-                temp.append(slist)
-        start = temp
-    H = {s: updateSearch(start[s], Edges, O) for s in range(len(start))}
-    print(start)
-    canReach = {s: [start[s]] + [c for c in itertools.combinations(Arcs, K)
-                    if all(
-                        [getProb(p, c, H[s], O) > 0,
-                         len(H[s]) - len(updateSearch(c, H[s], O)) == K,
-                         c in getConnections(start[s], succ, K)
-                         ]
-                            )
-                    
-                ]
-                for s in range(len(start))}
-    
-    return canReach
-                
-                
-g, p, Edges, _ = generateNetwork(19, 15, 0)
-Arcs = genArcs(g)
-Nodes = genNodes(g)
-#hist = Edges
-#print(hist)
-#K = 3
-#succ = genSuccessors(g, Arcs)
-#a1 = Arcs[3]
-#a2 = Arcs[25]
-#a3 = Arcs[17]
-#maxTime = math.ceil(2 * len(Edges)/K + 5)
-canReach = genFeas(g, p, K, Arcs, Edges, Nodes, maxTime)
-print(canReach)
-#print(Arcs)
-#path = [a1, a2, a3]
-#con = genConnections(path, succ, K)
-#prob = getProb(p, path, hist, O)
-#print('P: ', path)
-#print(con)
-#print(prob)
+        print('Cands:')
+        if K- len(leafArcs) == 1:
+            cands = [a for a in Arcs if a not in leafArcs]
+            print(cands)
+            print('start comb')
+            combs = []
+            for c in cands:
+                temp = leafArcs + [c]
+                combs.append(tuple(temp))
+        else:
+            cands = list(itertools.combinations([a for a in Arcs if a not in leafArcs], K - len(leafArcs)))
+            print(cands)
+            print('start comb')
+            combs = []
+            for c in cands:
+                temp = leafArcs + [x for x in c]
+                combs.append(tuple(temp))
+        print(len(combs))
+        print(combs)
+#        msvcrt.getch()
+        print('end comb')
+        for r in combs:
+            ns = nextStep([r, initH], 1, maxTime, O, succ, K, A)
+#            if ns[1] and ns[0] <= tmin:
+#                tmin = ns[0]
+            A[1].append([r, initH])
+    ENDSTART = time.time()
+    print('Time taken: ', ENDSTART - TIMESTART)
+    return A[1]
 
+#g, prob, Edges, _ = generateNetwork(19, 15, 0)
+##displayGraph(g)
+#Arcs = genArcs(g)
+#Nodes = genNodes(g)
+#K = 3
+#maxTime = 10
+##maxTime = math.ceil(2 * len(Edges)/K + 3)
+#A = genFeas(g, prob, K, Arcs, Edges, Nodes, maxTime)
+#print(A)
+#path = tuple([Arcs[0], Arcs[20], Arcs[11]])
+#print(path)
+#succ = genSuccessors(g, Arcs)
+#currentHist = tuple([e for e in Edges])
+#con = getConnections(path, succ, K, 1, maxTime, currentHist)
+#print(con)
+#displayGraph(g)
+    
