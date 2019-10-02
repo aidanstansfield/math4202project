@@ -62,7 +62,7 @@ def displayGraph(graph):
 
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
-    plot.figure(1,figsize=(10, 10),dpi=72)
+    plot.figure(1, figsize=(10, 10), dpi=72)
     if numEdges / numNodes >= 2:
         plot.title('Dense')
         plot.axis()
@@ -179,7 +179,76 @@ def generateDense(edges, nodes, graph):
     return graph
 
 
+def adjustLeafNodes(graph):
+    leaf = []
+    for n in graph.keys():
+        if len(graph[n]) == 1:
+            neighboursInGraph = sum((i in graph.keys()) for i in gridNeighbours(n))
+
+            if neighboursInGraph == 1:
+                leaf.append(n)
+
+    displayGraph(graph)
+
+
 def generateSparse(edges, nodes, graph):
+    # Sparse network - like a manhattan network
+    # randomly choose a starting point on the grid
+    start = randint(0, GRID_SIZE ** 2 - 1)
+
+    # list of nodes we have visited (and thus will be added to the network)
+    visited = [start]
+    graph[start] = set()
+    numEdges = 0
+    while len(visited) < nodes:
+        current = choice(visited)
+        validNeighbours = tuple(x for x in gridNeighbours(current)
+                                if x is not None)
+        unvisited = [v for v in validNeighbours if v not in visited]
+
+        numToAdd = randint(0, min(nodes-len(visited), len(unvisited)))
+        for n in range(numToAdd):
+            newNode = choice(unvisited)
+            graph[current].add(newNode)
+            graph[newNode].add(current)
+            visited.append(newNode)
+            unvisited.remove(newNode)
+            numEdges += 1
+    if numEdges < edges:
+        possibleNodes = {}
+        for n in graph.keys():
+            validNeighbours = list(x for x in gridNeighbours(n)
+                                   if x in graph.keys() and n not in graph[x])
+            if validNeighbours:
+                possibleNodes[n] = validNeighbours
+        print(sum(len(possibleNodes[n]) for n in possibleNodes)//2, edges-numEdges)
+        if sum(len(possibleNodes[n]) for n in possibleNodes)//2 < edges-numEdges:
+            print(sum(len(possibleNodes[n]) for n in possibleNodes)//2, edges-numEdges)
+            # Not enough spots to add a needed edge
+            adjustLeafNodes(graph)
+            return graph  # Return early. Generate network will run a check
+        while numEdges < edges:
+            edgeNode1 = choice(list(possibleNodes.keys()))
+
+            # Pick a neighbour from the possible ones calculated above
+            edgeNode2 = choice(possibleNodes[edgeNode1])
+            possibleNodes[edgeNode1].remove(edgeNode2)
+            possibleNodes[edgeNode2].remove(edgeNode1)
+            if len(possibleNodes[edgeNode1]) == 0:
+                del possibleNodes[edgeNode1]
+            if len(possibleNodes[edgeNode2]) == 0:
+                del possibleNodes[edgeNode2]
+            graph[edgeNode1].add(edgeNode2)
+            graph[edgeNode2].add(edgeNode1)
+
+            numEdges += 1
+    return graph
+
+
+
+
+
+def generateSparse2(edges, nodes, graph):
     # Sparse network - like a manhattan network
     #randomly choose a starting point on the grid
     start = randint(0, GRID_SIZE ** 2 - 1)
@@ -195,17 +264,19 @@ def generateSparse(edges, nodes, graph):
         validNeighbours = tuple(x for x in gridNeighbours(current) if x
                                 is not None)
         #add neighbours that we haven't visited to a list
-        nList = []
-        for v in validNeighbours:
-            if v not in visited:
-                nList.append(v)
+        nList = [v for v in validNeighbours if v not in visited]
+
         # print(nList)
         #randnum is number of neighbours we add (to give graph more
         #spread out/random look)
-        randNum = randint(0, len(nList))
-        for n in range(randNum):
+        numToAdd = randint(0, len(nList))
+        for n in range(numToAdd):
             #randomly choose a neighbour
             cand = choice(nList)
+
+
+
+            #Broken
             if cand not in visited:
                 #add neighbour node to graph connected to current node
                 if len(visited) < nodes:
@@ -215,6 +286,7 @@ def generateSparse(edges, nodes, graph):
         numEdges = getNumEdges(graph)
         if numEdges < edges:
             graph, numEdges = adjust1(graph, numEdges, edges)
+ 
     return graph
 
 
@@ -238,15 +310,12 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     graph = defaultdict(set)
     if a/b < 2:
         graph = generateSparse(a, b, graph)
-        edgeList = genEdges(graph)
-
-        numEdges = len(edgeList)
-        crowded, _ = checkCrowded(graph)
-        while getNumEdges(graph) < a or getNumNodes(graph) < b or crowded:
+        # crowded, _ = checkCrowded(graph)
+        while getNumEdges(graph) < a or getNumNodes(graph) < b: # or crowded:
             graph.clear()
             graph = generateSparse(a, b, graph)
 
-            crowded, _ = checkCrowded(graph)
+            # crowded, _ = checkCrowded(graph)
     else:
         # Dense network
         graph = generateDense(a, b, graph)
@@ -470,8 +539,11 @@ def readGraph(file):
 
 if __name__ == "__main__":
 
-    sparseInstance, p1, _, _ = generateNetwork(24, 18, 0)
-    denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
+    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
+
+    sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
+
+    # denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
 
     # writeGraph(denseInstance, denseSeed)
     # readGraph("M20N10_327504534.txt")
