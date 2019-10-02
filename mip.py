@@ -22,12 +22,21 @@ def genNeighbours(edges):
 
 def visualiseStrategy(state, arcs, graph):
     fig = pyplot.figure()
-
+    
     def init():
-        displayGraph(graph)
+        for key in graph.keys():
+            keyCoords = indexToXY(key)
+            for node in graph[key]:
+                nodeCoord = indexToXY(node)
+                pyplot.plot(
+                    [keyCoords[0], nodeCoord[0]],
+                    [keyCoords[1], nodeCoord[1]],
+                    'b.-'
+                )
+            pyplot.annotate(str(key), (keyCoords[0], keyCoords[1]))
 
     def animate(t):
-        pyplot.title('Sparse: t='+ str(t+1))
+        pyplot.title('Sparse: t=' + str(t+1))
         if t == 0:
             return
 
@@ -36,13 +45,12 @@ def visualiseStrategy(state, arcs, graph):
                 XCoords = [indexToXY(arcs[l][0])[0], indexToXY(arcs[l][1])[0]]
                 YCoords = [indexToXY(arcs[l][0])[1], indexToXY(arcs[l][1])[1]]
                 pyplot.plot(XCoords, YCoords, 'g-')
-                print(t, arcs[l], "green")
+
             if state["X"][t, l].x > 0.9:
                 XCoords = [indexToXY(arcs[l][0])[0], indexToXY(arcs[l][1])[0]]
                 YCoords = [indexToXY(arcs[l][0])[1], indexToXY(arcs[l][1])[1]]
-                pyplot.annotate(str(arcs[l]), (sum(XCoords)/2 - 0.25, sum(YCoords)))
                 pyplot.plot(XCoords, YCoords, 'r-',)
-                print(t, arcs[l], "red")
+
 
     # Must be assigned to a variable or the animation doesn't play
     anim = animation.FuncAnimation(fig, animate, init_func=init,
@@ -52,12 +60,11 @@ def visualiseStrategy(state, arcs, graph):
 
 
 def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
-#    startgen = clock()
+
     # min time for searchers to search every arc
 #    graph, p, edges = genEx(probType)
 #    #sets
-#    numEdges = len(edges)
-#    numNodes = len(graph.keys())
+
     M = range(0, numEdges)
     N = range(0, numNodes)
     L = range(0, 2 * numEdges)
@@ -128,13 +135,18 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
     initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
     # limit y so that every edge is searched by T
     {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
-
+    
+    
+    
+    # Changinge Branch priority based on aggregation
+#    XT = mip.addVar(vtype=GRB.INTEGER)
+#    mip.addConstr(XT==quicksum(X.values()))
+#    XT.BranchPriority = 10
+#    mip.setParam('GURO_PAR_MINBPFORBID', 1)
+    
     mip.optimize()
     time = mip.Runtime
 
-#    endMIP = clock()
-
-#    MIPtime = startMip - endMip
     state = {
         "X": X,
         "Y": Y,
@@ -142,15 +154,26 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
         "L": L,
         "maxTime": maxTime
     }
-    visualiseStrategy(state, arcs, graph)
+#    visualiseStrategy(state, arcs, graph)
 
     return mip, graph, time
 
 
-mip, graph, _ = MIP(NON_UNIFORM, 2, 19, 15, 25, 7412256138686257758)
+
+mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 25, 6726931912431499781)
+
+
+# 3358408176512599648
+
+# SLow:
+# 4772197386045408510
+# 6726931912431499781
+# 2600597230088613908
+
+#
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]
 #gs = {}
 #for i in range(10):
-#    ob[i], gs[i], time[i] = MIP(1, 1, 19, 15)
+#    ob[i], gs[i], time[i] = MIP(1, 1, 19, 15, 30)
 #avET = sum(ob)/len(ob)
