@@ -188,7 +188,7 @@ def adjustLeafNodes(graph):
             if neighboursInGraph == 1:
                 leaf.append(n)
 
-    displayGraph(graph)
+    # displayGraph(graph)
 
 
 def generateSparse(edges, nodes, graph):
@@ -221,9 +221,9 @@ def generateSparse(edges, nodes, graph):
                                    if x in graph.keys() and n not in graph[x])
             if validNeighbours:
                 possibleNodes[n] = validNeighbours
-        print(sum(len(possibleNodes[n]) for n in possibleNodes)//2, edges-numEdges)
+        # print(sum(len(possibleNodes[n]) for n in possibleNodes)//2, edges-numEdges)
         if sum(len(possibleNodes[n]) for n in possibleNodes)//2 < edges-numEdges:
-            print(sum(len(possibleNodes[n]) for n in possibleNodes)//2, edges-numEdges)
+
             # Not enough spots to add a needed edge
             adjustLeafNodes(graph)
             return graph  # Return early. Generate network will run a check
