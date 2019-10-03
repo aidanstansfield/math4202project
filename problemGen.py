@@ -13,7 +13,7 @@ import sys
 import networkx as nx
 import matplotlib.pyplot as plot
 
-GRID_SIZE = 10
+GRID_SIZE = 20
 
 
 # Display a square lattice of dimensions size (default 10)
@@ -62,7 +62,7 @@ def displayGraph(graph):
 
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
-    plot.figure(1,figsize=(10, 10),dpi=72)
+    plot.figure(1, figsize=(GRID_SIZE, GRID_SIZE), dpi=72)
     if numEdges / numNodes >= 2:
         plot.title('Dense')
         plot.axis()
@@ -180,34 +180,35 @@ def generateDense(edges, nodes, graph):
 
 
 def generateSparse(edges, nodes, graph):
+    print("new sparse")
     # Sparse network - like a manhattan network
-    #randomly choose a starting point on the grid
+    # randomly choose a starting point on the grid
     start = randint(0, GRID_SIZE ** 2 - 1)
-    #list of nodes we have visited (and thus will be added to the network)
+    # list of nodes we have visited (and thus will be added to the network)
     visited = [start]
     graph[start] = set()
-    #loop will run until we have the right number of nodes/edges in graph
+    # loop will run until we have the right number of nodes/edges in graph
     while len(visited) < nodes:
-        #pick random element in visited (on first run, this will just be
-        #the start node)
+        # pick random element in visited (on first run, this will just be
+        # the start node)
         current = choice(visited)
-        #find neighbours of current node
+        # find neighbours of current node
         validNeighbours = tuple(x for x in gridNeighbours(current) if x
                                 is not None)
-        #add neighbours that we haven't visited to a list
+        # add neighbours that we haven't visited to a list
         nList = []
         for v in validNeighbours:
             if v not in visited:
                 nList.append(v)
         # print(nList)
-        #randnum is number of neighbours we add (to give graph more
-        #spread out/random look)
+        # randnum is number of neighbours we add (to give graph more
+        # spread out/random look)
         randNum = randint(0, len(nList))
         for n in range(randNum):
-            #randomly choose a neighbour
+            # randomly choose a neighbour
             cand = choice(nList)
             if cand not in visited:
-                #add neighbour node to graph connected to current node
+                # add neighbour node to graph connected to current node
                 if len(visited) < nodes:
                     graph[current].add(cand)
                     graph[cand].add(current)
@@ -265,7 +266,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     edges = genEdges(graph)
     prob = {}
     if pUn is not None:
-        #uniform case
+        # uniform case
         for e in edges:
             prob[e] = pUn
     else:
@@ -281,12 +282,12 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 
 
 def adjust1(graph, numEdges, a):
-#    print('Graph Adjust 1', numEdges)
+    #    print('Graph Adjust 1', numEdges)
     found = 0
     for i in graph.keys():
         for j in gridNeighbours(i):
             if j in graph.keys() and j not in graph[i] and j is not \
-                None and numEdges < a:
+                    None and numEdges < a:
                 graph[i].add(j)
                 graph[j].add(i)
                 numEdges += 1
@@ -297,7 +298,7 @@ def adjust1(graph, numEdges, a):
 
 
 def adjust2(graph, numEdges, a):
-#    print('Edge Adjust 2: ', numEdges)
+    #    print('Edge Adjust 2: ', numEdges)
     leaf = genLeaf(graph)
     for e in leaf:
         graph.pop(e[0])
@@ -322,7 +323,7 @@ def adjust2(graph, numEdges, a):
 
 def checkCrowded(graph):
     for n in graph.keys():
-        if n % 10 != 0 and n % 10 != 9 and (n > 20 or n < 80):
+        if n % GRID_SIZE != 0 and n % GRID_SIZE != 9 and (n > 20 or n < 80):
             found = [n]
             direction = 1
             for m in range(n - 1, n + 2):
@@ -331,29 +332,29 @@ def checkCrowded(graph):
             if len(found) != 3:
                 continue
             direction = 1
-            for m in range(n + 10 - 1, n + 10 + 2):
+            for m in range(n + GRID_SIZE - 1, n + GRID_SIZE + 2):
                 for f in found:
                     if m in graph[f] and m not in found:
                         found.append(m)
             if len(found) == 3:
                 direction = -1
-                for m in range(n - 10 - 1, 10 * n + 2):
+                for m in range(n - GRID_SIZE - 1, GRID_SIZE * n + 2):
                     for f in found:
                         if m in graph[f] and m not in found:
                             found.append(m)
             if len(found) == 6:
-                for m in range(n + 2 * direction * 10 - 1, n + 2 * direction * 10 + 2):
+                for m in range(n + 2 * direction * GRID_SIZE - 1, n + 2 * direction * GRID_SIZE + 2):
                     for f in found:
                         if m in graph[f] and m not in found:
                             found.append(m)
             if len(found) == 9:
                 return 1, found
     return 0, found
-                
-                    
-#functions used to check for and fix disconnectedness in network- bit touchy 
-#sometimes hence commented
-#def fixDiscon(graph):
+
+
+# functions used to check for and fix disconnectedness in network- bit touchy
+# sometimes hence commented
+# def fixDiscon(graph):
 #    for n in graph.keys():
 #        if len(graph[n]) == 1:
 #            for m in graph[n]:
@@ -406,11 +407,11 @@ def getNumNodes(graph):
     return len(graph.keys())
 
 
-#to test if networks generated properly, run following script which generates
-#1000 different networks and checks if they produce the right num of 
-#edges/nodes and gives statements alerting if any bad stuff occurs
-#if no printed error messages, network should be fine
-    
+# to test if networks generated properly, run following script which generates
+# 1000 different networks and checks if they produce the right num of
+# edges/nodes and gives statements alerting if any bad stuff occurs
+# if no printed error messages, network should be fine
+
 def genMult(a, b, probType, N):
     gs = {}
     es = {}
@@ -435,13 +436,13 @@ def genMult(a, b, probType, N):
             print('####################### TOO FEW NODES ######################')
             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
         print(checkCrowded(gs[i]), 'i = ', i)
-        displayLattice(graph = gs[i])
-        
+        displayLattice(graph=gs[i])
+
     if len(bad) > 0:
         print('**************************BAD ALERT******************************')
         print(bad)
     return gs, es, p, bad
-#if len(discon) > 0:
+# if len(discon) > 0:
 #    print('**************************DISCONNECTED******************************')
 
 
@@ -451,7 +452,7 @@ def writeGraph(graph, seed):
     edges = getNumEdges(graph)
     graphClass = "M" + str(edges) + "N" + str(nodes)
     fileName = graphClass+"_"+str(seed)+".txt"
-    
+
     with open(fileName, 'w') as f:
         f.write(str(dict(graph)))
 
@@ -468,9 +469,10 @@ def readGraph(file):
         print("An error occured reading the file")
     return graph
 
+
 if __name__ == "__main__":
 
-    sparseInstance, p1, _, _ = generateNetwork(24, 18, 0)
+    sparseInstance, p1, _, _ = generateNetwork(200, 150, 0)
     denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
 
     # writeGraph(denseInstance, denseSeed)
