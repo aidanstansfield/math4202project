@@ -2,6 +2,7 @@ from gurobipy import quicksum, GRB, Model
 from problemGen import generateNetwork, genArcs, genNodes, displayGraph, indexToXY
 from time import clock
 from matplotlib import pyplot, animation
+import msvcrt
 
 UNIFORM = 0
 NON_UNIFORM = 1
@@ -51,7 +52,8 @@ def visualiseStrategy(state, arcs, graph):
     pyplot.show()
 
 
-def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
+def MIP(probType, K, numEdges, numNodes, maxTime, seed = None, graph = None,
+        p = None, edges = None):
 #    startgen = clock()
     # min time for searchers to search every arc
 #    graph, p, edges = genEx(probType)
@@ -65,7 +67,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
 
     #data
     #gen network - p is pdf and edges is set of edges
-    graph, p, edges, graphSeed = generateNetwork(numEdges, numNodes, probType, seed)
+    if graph is None:
+        graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
     #    displayGraph(graph)
     S = {}
     E = {}
@@ -142,12 +145,130 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
         "L": L,
         "maxTime": maxTime
     }
-    visualiseStrategy(state, arcs, graph)
+#    visualiseStrategy(state, arcs, graph)
 
-    return mip, graph, time
+    return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
+#def Cost(searchPath, L, M, arcs, Edges, O, T, exp):
+##    print(searchPath)
+##    alpha = [0 for t in T]
+##    alpha[0] = 1
+##    exp = []
+##    for t in T[1:]:
+###        alpha[t] = alpha[t - 1]
+##        print('P: ', path[t - 1])
+##        for l in L:
+##            if arcs[l] not in path[t - 1]:
+##                continue
+##            for m in M:
+##                if O[l, m] == 1:
+##                    exp.append(Edges[m])
+##        alpha[t] = 1 - sum(prob[Edges[m]] for m in M if Edges[m] in exp)
+##    print('My alpha: ')
+##    for t in T:
+##        print(alpha[t])
+##    cost = sum((alpha[t - 1] + alpha[t])/2 for t in T[1:])
+##    cost = 0
+#    searchCont = []
+#    for l in L:
+#        if arcs[l] != searchPath[t - 1]:
+#            continue
+#        for m in M:
+#            if O[l, m] == 1 and Edges[m] not in exp:
+#                exp.append(Edges[m])
+#                searchCont.append(Edges[m])
+##    for t in T[1:]:
+###        print('P: ', searchPath[t - 1])
+###        msvcrt.getch()
+##        for l in L:
+##            if arcs[l] != searchPath[t - 1]:
+##                continue
+##            for m in M:
+##                if O[l, m] == 1 and Edges[m] not in exp:
+##                    exp.append(Edges[m])
+##                    searchCont.append(Edges[m])
+##        print(exp)
+#    cost =  sum(prob[Edges[m]] for m in M if Edges[m] in searchCont)
+#    print('|SC|: ', len(searchCont))
+#    print('Cost: ', cost)
+##        alpha[t] = 1 - sum(prob[Edges[m]] for m in M if Edges[m] in exp)
+#    cost = sum((alpha[t - 1] + alpha[t])/2 for t in T[1:])
+#    for k in range(K):
+#        exp = []
+#        for t in T[1:]:
+#            print('P: ', searchPath[t - 1])
+#            for l in L:
+#                if arcs[l] not in searchPath[t]:
+#                    continue
+#                for m in M:
+#                    if O[l, m] == 1:
+#                        exp.append(Edges[m])
+#            alpha[k, t] = 1 - sum(prob[Edges[m]] for m in M if Edges[m] in exp)
+#        cost[k] = sum((alpha[k, t - 1] + alpha[k, t])/2 for t in T[1:])
+#    return cost
+                
+#    for l in L:
+#        if arcs[l] not in path:
+#            continue
+#        for m in M:
+#            if O[l, m] == 1:
+#                cost += (1 - prob[Edges[m]])/2
+#                t += 1
+#    return cost, exp
 
-mip, graph, _ = MIP(NON_UNIFORM, 2, 19, 15, 25, 7412256138686257758)
+#def getEdge(a):
+#    for e in Edges:
+#        if O[a, e]:
+#            return e
+#K = 3
+#mip, g, t, X, prob, Edges, O, Arcs, L, M, T, alpha = MIP(0, K, 19, 15, 42)
+#print('E: ', Edges)
+#
+#print('Time taken: ', t)
+#print('Obj val: ', mip.objVal)
+#searchPath = {}
+#path = []
+#for t in T[1:]:
+#    route = []
+#    for l in L:
+#        if X[t, l].x == 1:
+#            route.append(Arcs[l])
+#    path.append(route)
+#print(path)
+#for k in range(K):
+#    searchPath[k] = []
+#    for t in T[1:]:
+#        searchPath[k].append(path[t - 1][k])
+#    
+#print('SP: ', searchPath)
+##for (t, l) in X:
+##    if X[t, l].x == 1:
+##        path.append(Arcs[l])
+##print('RP: ', path)
+#exp = []
+#c = [1 for t in T]
+#print('MAXTIME: ', T)
+#for t in T[1:]:
+#    c[t] = c[t - 1]
+#    print('alpha: ', alpha[t].x)
+#    for k in range(K):
+#        sCost, exp = Cost(searchPath[k], L, M, Arcs, Edges, O, T, exp)
+#        print('sCost: ', sCost)
+#        c[t] -= sCost
+##    c[t] = 1 - sum(Cost(searchPath[k], L, M, Arcs, Edges, O, T, exp) for k in range(K))
+#    print(c[t])
+##sCost = {}
+##for k in range(K):
+##    sCost[k] = Cost(searchPath[k], L, M, Arcs, Edges, O, T)
+##    print('Seach Cost ', k, ': ', sCost[k])
+##totCost = sum(sCost[k] for k in range(K))
+#totCost = sum((c[t - 1] + c[t])/2 for t in T[1:])
+#print('TOTAL COST: ', totCost)
+##pCost = Cost(path, L, M, Arcs, Edges, O, T)
+##print('Cost: ', pCost)
+#displayGraph(g)
+mip, graph, _ = MIP(NON_UNIFORM, 30, 200, 150, 70, graph = None, p = None,
+                    edges = None)
 #ob = [0 for i in range(10)]
 #time = [0 for i in range(10)]
 #gs = {}
