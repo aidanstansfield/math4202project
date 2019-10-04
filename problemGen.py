@@ -13,7 +13,7 @@ import sys
 import networkx as nx
 import matplotlib.pyplot as plot
 
-GRID_SIZE = 20
+GRID_SIZE = 10
 
 
 # Display a square lattice of dimensions size (default 10)
@@ -62,12 +62,13 @@ def displayGraph(graph):
 
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
-    plot.figure(1, figsize=(GRID_SIZE, GRID_SIZE), dpi=72)
+    plot.figure(1, figsize=(10, 10), dpi=72)
     if numEdges / numNodes >= 2:
         plot.title('Dense')
         plot.axis()
         dense = nx.Graph(graph)
-        nx.draw_networkx(dense)
+        pos = nx.circular_layout(dense)
+        nx.draw_networkx(dense, pos=pos)
     else:
         plot.title('Sparse')
         # plot.axis([-1, 11, -1, 11])
@@ -193,7 +194,6 @@ def adjustLeafNodes(graph):
 
 
 def generateSparse(edges, nodes, graph):
-    print("new sparse")
     # Sparse network - like a manhattan network
     # randomly choose a starting point on the grid
     start = randint(0, GRID_SIZE ** 2 - 1)
@@ -228,6 +228,7 @@ def generateSparse(edges, nodes, graph):
                     visited.append(cand)
         numEdges = getNumEdges(graph)
         if numEdges < edges:
+            print("adjust")
             graph, numEdges = adjust1(graph, numEdges, edges)
 
     return graph
@@ -254,11 +255,22 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     if a/b < 2:
         graph = generateSparse(a, b, graph)
         # crowded, _ = checkCrowded(graph)
-        while getNumEdges(graph) < a or getNumNodes(graph) < b:  # or crowded:
+        retries = 0
+        bestNumEdges = getNumEdges(graph)
+        bestGraph = graph
+        # or crowded:
+        while (getNumEdges(graph) < a or getNumNodes(graph) < b) and retries < 50:
             graph.clear()
             graph = generateSparse(a, b, graph)
-
-            # crowded, _ = checkCrowded(graph)
+            if getNumEdges(graph) > bestNumEdges:
+                bestGraph = graph
+                bestNumEdges = getNumEdges(graph)
+            retries += 1
+        if bestNumEdges != edges:
+            print("Could not generate a graph with the required number of edges.\n Try using",
+                  bestNumEdges, "edges.")
+            graph = bestGraph
+        # crowded, _ = checkCrowded(graph)
     else:
         # Dense network
         graph = generateDense(a, b, graph)
@@ -483,11 +495,11 @@ def readGraph(file):
 
 if __name__ == "__main__":
 
-    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
+    sparseInstance, p1, _, _ = generateNetwork(19, 15, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
+    # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
-    # denseInstance, p2, _, denseSeed = generateNetwork(20, 10, 0)
+    # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
 
     # writeGraph(denseInstance, denseSeed)
     # readGraph("M20N10_327504534.txt")
