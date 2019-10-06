@@ -121,7 +121,7 @@ legalPaths = {((a,), updateHist(initH, a)): isLegal(((a,), updateHist(initH, a))
                 for a in Arcs}
 t = 0
 #generate paths up to length maxTime/numSearchers - 1
-while t < math.ceil(maxTime/numSearchers) - 1 and len(candPaths[t]) > 0:
+while t <= math.ceil(maxTime/numSearchers) and len(candPaths[t]) > 0:
     print('t = ', t, len(legalPaths), len(candPaths[t]))
     candPaths.append([])
     for p in candPaths[t]:
@@ -137,16 +137,19 @@ while t < math.ceil(maxTime/numSearchers) - 1 and len(candPaths[t]) > 0:
     t += 1
     
 print('Num Starting Paths: ', len(legalPaths))
-
+#startPaths = {(k, aStart): [p for p in legalPaths if p[0][0] == aStart] 
+#            for k in K for aStart in Arcs}
+P = [p for p in legalPaths if len(p[0]) in 
+     range(math.ceil(maxTime/numSearchers) - 2, math.ceil(maxTime/numSearchers))]
 #model
 RMP = Model('Search Path')
 
 #variables
 #Z[p, k] = 1 if searcher k searches path p
-Z = {(p, k): RMP.addVar() for p in legalPaths for k in K}
+Z = {(p, k): RMP.addVar(vtype = GRB.BINARY) for p in P for k in K}
 #U[k, e] = # of edges searched by searcher k that have already been explored by
 #prev searchers
-U = {(k, e): RMP.addVar() for k in K for e in Edges}
+U = {(k, e): RMP.addVar(vtype = GRB.INTEGER) for k in K for e in Edges}
 
 #1 if a path contains an edge
 def gamma(p, e):
@@ -161,7 +164,7 @@ RMP.setObjective(quicksum(Cost(p)* Z[p, k] for (p, k) in Z) + \
     
 #constraints
 print('def onePathSearched')
-onePathSearched = {k: RMP.addConstr(quicksum(Z[p, k] for p in legalPaths) == 1)
+onePathSearched = {k: RMP.addConstr(quicksum(Z[p, k] for p in P) == 1)
                     for k in K}
 print('def eachEdgeSearched')
 eachEdgeSearched = {e: RMP.addConstr(quicksum(Z[p, k] * gamma(p[0], e) for 
@@ -169,9 +172,9 @@ eachEdgeSearched = {e: RMP.addConstr(quicksum(Z[p, k] * gamma(p[0], e) for
 print('def defU')
 defU = {(k, e): RMP.addConstr(U[k, e] == quicksum(Z[p, kk] * gamma(p[0], e)
             for (p, kk) in Z if kk < k)) for k in K for e in Edges}
-RMP.setParam('OutputFlag', 0)
+RMP.setParam('OutputFlag', 1)
 
-print('RMP defined')
+RMP.optimize()
 
 #add column to problem
 def addPath(p, k):
@@ -188,8 +191,7 @@ def addPath(p, k):
                 for e in E:
                     RMP.chgCoeff(defU[kk], gamma(p[0], e))
 #legal paths paired with start arc
-startPaths = {(k, aStart): [p for p in legalPaths if p[0][0] == aStart] 
-            for k in K for aStart in Arcs}
+
 
 def genColumns():
     colsAdded = 0
@@ -224,39 +226,39 @@ def genColumns():
                 colsAdded += 1
     return colsAdded
 
-thresh = 0.9
-while thresh > 0.69:
-    while True:
-        RMP.optimize()
-#        print(RMP.objVal)
-#        msvcrt.getch()
-        print('Down to ', RMP.objVal)
-#        msvcrt.getch()
-        Added = genColumns()
-        print('Added: ', Added)
-#        msvcrt.getch()
-        if Added == 0:
-            break
-    numFixed = 0
-    for (p, k) in Z:
-        if Z[p, k].x > thresh and Z[p, k].x < 1 - EPS:
-            #set lower bound to be 1
-            Z[p, k].lb = 1
-            numFixed += 1
-    if numFixed == 0:
-        thresh -= 0.1
-    else:
-        print('*************************Fixed ', numFixed, thresh, '*************************')
-        
-RMP.setParam('OutputFlag', 1)
-
-for (p, k) in Z:
-    Z[p, k].vtype = GRB.BINARY
-RMP.setParam('MIPGap', EPS)
-RMP.optimize()
-
-for (p, k) in Z:
-    Z[p, k].lb = 0
-
-RMP.optimize()
+#thresh = 0.9
+#while thresh > 0.69:
+#    while True:
+#        RMP.optimize()
+##        print(RMP.objVal)
+##        msvcrt.getch()
+#        print('Down to ', RMP.objVal)
+##        msvcrt.getch()
+#        Added = genColumns()
+#        print('Added: ', Added)
+##        msvcrt.getch()
+#        if Added == 0:
+#            break
+#    numFixed = 0
+#    for (p, k) in Z:
+#        if Z[p, k].x > thresh and Z[p, k].x < 1 - EPS:
+#            #set lower bound to be 1
+#            Z[p, k].lb = 1
+#            numFixed += 1
+#    if numFixed == 0:
+#        thresh -= 0.1
+#    else:
+#        print('*************************Fixed ', numFixed, thresh, '*************************')
+#        
+#RMP.setParam('OutputFlag', 1)
+#
+#for (p, k) in Z:
+#    Z[p, k].vtype = GRB.BINARY
+#RMP.setParam('MIPGap', EPS)
+#RMP.optimize()
+#
+#for (p, k) in Z:
+#    Z[p, k].lb = 0
+#
+#RMP.optimize()
                         
