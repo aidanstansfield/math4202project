@@ -502,8 +502,12 @@ def readGraph(file):
 
 
 if __name__ == "__main__":
+#    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(19, 15, 0)
+    sparseInstance, p1, _, _ = generateNetwork(200, 150, 0, 2086539324)
+    leaf = genLeaf(sparseInstance)
+    print(len(leaf))
+
 
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
