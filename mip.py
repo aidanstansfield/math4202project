@@ -73,8 +73,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
 
     #data
     #gen network - p is pdf and edges is set of edges
-    if graph is None:
-        graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
+    graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
     #    displayGraph(graph)
     S = {}
     E = {}
@@ -140,7 +139,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
     
     
     
-    # Changinge Branch priority based on aggregation
+#     Changinge Branch priority based on aggregation
 #    XT = mip.addVar(vtype=GRB.INTEGER)
 #    mip.addConstr(XT==quicksum(X.values()))
 #    XT.BranchPriority = 10
@@ -156,13 +155,14 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
         "L": L,
         "maxTime": maxTime
     }
+    
 #    visualiseStrategy(state, arcs, graph)
 
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
 
 
-mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 25, 6726931912431499781)
+mip, graph, _ = MIP(UNIFORM, 1, 50, 14, 50)
 
 
 # 3358408176512599648
