@@ -73,8 +73,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
 
     #data
     #gen network - p is pdf and edges is set of edges
-    if graph is None:
-        graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
+    #if graph is None:
+    graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
     #    displayGraph(graph)
     S = {}
     E = {}
@@ -161,8 +161,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
 
-
-mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 25, 6726931912431499781)
+if __name__ == "__main__":
+    mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19, 748345644471475368)
 
 
 # 3358408176512599648
