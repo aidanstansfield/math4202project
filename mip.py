@@ -60,7 +60,7 @@ def visualiseStrategy(state, arcs, graph):
     pyplot.show()
 
 
-def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
+def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p = None, seed=None):
 
     # min time for searchers to search every arc
 #    graph, p, edges = genEx(probType)
@@ -74,7 +74,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
     #data
     #gen network - p is pdf and edges is set of edges
 #    if graph is None:
-    graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
+    if graph is None:
+        graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
     #    displayGraph(graph)
     S = {}
     E = {}
@@ -156,7 +157,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, seed=None):
         "L": L,
         "maxTime": maxTime
     }
-    visualiseStrategy(state, arcs, graph)
+#    visualiseStrategy(state, arcs, graph)
 
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
