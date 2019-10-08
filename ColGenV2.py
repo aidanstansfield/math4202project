@@ -70,10 +70,21 @@ def getEdge(a):
         if O[a, e]:
             return e
         
+def pickExtras(Arcs, leafArcs):
+    cands = []
+    dense = 4
+    for a in Arcs:
+        if a in leafArcs:
+            continue
+        if len(arcCon[a]) == dense:
+            cands.append(a)
+    return cands
+        
 leafArcs = genLeaf(graph)
 arcChoices = [l for l in leafArcs]
+extras = pickExtras(Arcs, leafArcs)
 for i in range(numSearchers - len(leafArcs) + 1):
-    newArc = random.choice(Arcs)
+    newArc = random.choice(extras)
     while newArc in arcChoices:
         newArc = random.choice(Arcs)
     arcChoices.append(newArc)
@@ -89,7 +100,7 @@ def updateHist(hist, searched):
     return tuple(temp)
 
 def Cost(p, t):
-    if t == 0 or t == maxTime:
+    if t == maxTime:
         factor = 1/2
     else:
         factor = 1
@@ -100,19 +111,25 @@ def Cost(p, t):
     return factor * alpha
 
 pathCands = [(c, updateHist(initH, c)) for c in pathCombs]
-
-initPaths = {0: [(c, Cost(c, 1)) for c in pathCands]}
+initPaths = {1: [(c, Cost(c, 1)) for c in pathCands]}
 succ = defaultdict(list)
-for startP in initPaths[0]:
-    succ[0, startP[0][0]] = list(itertools.product(*[[s for s in arcCon[a]] for a in 
+for startP in initPaths[1]:
+    succ[1, startP[0][0]] = list(itertools.product(*[[s for s in arcCon[a]] for a in 
         startP[0][0]]))
+#n = 0
+#for p in initPaths[0]:
+#    for s in succ[0, p[0][0]]:
+#        n += 1
+#print('n = ', n)
+#msvcrt.getch()
 #succ = {(0, startP[0][0]): list(itertools.product(*[[s for s in arcCon[a]] for a in 
 #        startP[0][0]])) for startP in initPaths[0]}
 pred = defaultdict(list)
-t = 0
+t = 1
 print(len(initPaths[t]))
 found = 0
-while t <= maxTime:
+validEnds = []
+while t < maxTime:
     print('t = ', t)
     initPaths[t + 1] = []
 #    for i in initPaths[t]:
@@ -127,72 +144,98 @@ while t <= maxTime:
 #            for s in succ[t + 1, q]:
 #                newPath = (s, updateHist(h, s))
 #                initPaths[t + 1].append((newPath, Cost(newPath, t + 1)))
-    for i in initPaths[t]:
-#        print(len(succ[t, i[0][0]]))
-#        msvcrt.getch()
-#        print('P: ', pred[t, i[0][0]])
-#        print(i[0][0])
-        for q in succ[t, i[0][0]]:
-#            print('do thing')
+    lbH1 = math.ceil(numSearchers * 1/3) + 1
+    lbT1 = math.ceil(len(Edges)/numSearchers * 1/3)
+    lbH2 = math.ceil(numSearchers * 2/3) + 1
+    lbT2 = math.ceil(len(Edges)/numSearchers * 2/3)
+    while len(initPaths[t + 1]) == 0:
+        lbH1 -= 1
+        lbH2 -= 1
+        for i in initPaths[t]:
+    #        print(len(succ[t, i[0][0]]))
+    #        msvcrt.getch()
+    #        print('P: ', pred[t, i[0][0]])
+    #        print(i[0][0])
+            for q in succ[t, i[0][0]]:
+    #            print('do thing')
+                temp = list(itertools.product(*[[x for x in arcCon[a]]
+                    for a in q]))
+                for s in temp:
+                    density = 0
+                    count = 0
+                    for a in s:
+                        if getEdge(a) in i[0][1]:
+                            count += 1
+                        density += len(arcCon[a])
+                    if count >= 2 or density >= 3 * numSearchers + 1:
+                        continue
+                    succ[t + 1, q].append(s)
+    #            print(len(updateHist(h, q)))
+                newH = updateHist(i[0][1], q)
+                if len(newH) - len(i[0][1]) < lbH1 and \
+                    t <= lbT2:
+    #                print('no')
+                    continue
+#                elif len(newH) - len(i[0][1]) <= lbH2 and \
+#                    t <= lbT2:
+                    continue
+                elif len(newH) - len(i[0][1]) == 0 and t >= \
+                    math.ceil(len(Edges)/numSearchers * 2/3):
+                    continue
+    #            elif len(newH) - len(i[0][1]) == 0 and t >5:
+    #                continue
                 
-#            print(len(updateHist(h, q)))
-            newH = updateHist(i[0][1], q)
-            if len(newH) - len(i[0][1]) <= 2 and t < 4:
-#                print('no')
-                continue
-            elif len(newH) - len(i[0][1]) <= 1 and t == 4:
-                continue
-            elif len(newH) - len(i[0][1]) == 0 and t >5:
-                continue
-            sCands = list(itertools.product(*[[x for x in arcCon[a]]
-            for a in q]))
-#            print(sCands)
-#            if t >= 6:
-#                print('|sc| = ', len(sCands))
-            for s in sCands:
-                count = 0
-                for a in s:
-                    if getEdge(a) in i[0][1]:
-                        count += 1
-                if count >= 2:
-                    sCands.remove(s)
-#            print('yes: ', len(sCands))
-            for s in sCands:
-                succ[t + 1, q].append(s)
-#            print(q)
-#            print(succ[t + 1, q])
-#            msvcrt.getch()
-#            pred[t + 1, q].append(i[0][0])
-#            if t >= 6:
-#                print('|succ| = ', len(succ[t + 1, q]))
-#            print(succ[t + 1, q])
-#            msvcrt.getch()
-            
-            newPath = (q, newH)
-            cost = Cost(newPath, t + 1)
-            if cost < EPS:
-                found = 1
-            initPaths[t + 1].append((newPath, Cost(newPath, t + 1)))
-#            print('hi')
-#        if t >= 1:
-#            pred[t, i[0][0]] = [q[0][0] for q in initPaths[t - 1] if
-#                 i[0][0] in succ[t - 1, q[0][0]]]
+    #            print(sCands)
+    #            if t >= 6:
+    #                print('|sc| = ', len(sCands))
+    #            print(q)
+    #            print(succ[t + 1, q])
+    #            msvcrt.getch()
+    #            pred[t + 1, q].append(i[0][0])
+    #            if t >= 6:
+    #                print('|succ| = ', len(succ[t + 1, q]))
+    #            print(succ[t + 1, q])
+    #            msvcrt.getch()
+                
+                newPath = (q, newH)
+                cost = Cost(newPath, t + 1)
+                if cost < EPS:
+                    found = 1
+                    validEnds.append((newPath, cost))
+                initPaths[t + 1].append((newPath, cost))
+    #            print('hi')
+    #        if t >= 1:
+    #            pred[t, i[0][0]] = [q[0][0] for q in initPaths[t - 1] if
+    #                 i[0][0] in succ[t - 1, q[0][0]]]
+        print(len(initPaths[t + 1]))
+    t += 1
     if found == 1:
         print('Breaking')
         tFin = t + 1
-        validEnds = []
-        for i in initPaths[tFin]:
-            if i[1] < EPS:
-#                for p in initPaths[tFin - 1]:
-#                    if i[0][0] in succ[tFin - 1, p[0][0]]:
-#                        pred[tFin, i[0][0]].append(p[0][0])
-#                pred[tFin, i[0][0]] = [p[0][0] for p in initPaths[tFin - 1]
-#                if i[0][0] in succ[tFin - 1, p[0][0]]]
-                validEnds.append(i)
+        print('tFin: ', tFin, len(initPaths[tFin]))
+#        print('|validEnds| = ', validEnds)
+#        validEnds = []
+#        for i in initPaths[tFin]:
+#            if i[1] < EPS:
+##                for p in initPaths[tFin - 1]:
+##                    if i[0][0] in succ[tFin - 1, p[0][0]]:
+##                        pred[tFin, i[0][0]].append(p[0][0])
+##                pred[tFin, i[0][0]] = [p[0][0] for p in initPaths[tFin - 1]
+##                if i[0][0] in succ[tFin - 1, p[0][0]]]
+#                validEnds.append(i)
         break
-#    print(succ.keys())
-    print(len(initPaths[t + 1]))
-    t += 1
+    #    print(succ.keys())
+        
+    
+#thing = [0 for t in range(tFin)]
+#for t in range(tFin):
+#    for p in initPaths[t]:
+#        for q in initPaths[t + 1]:
+#            if q[0][0] in succ[t, p[0][0]]:
+#                thing[t] += 1
+#print(thing)
+#print(tFin)
+#msvcrt.getch()
 #for (t, _) in pred.keys():
 #    print(t)
 #validEnds = []
@@ -201,7 +244,7 @@ while t <= maxTime:
 #        validEnds.append(end)
 print('Num Ends: ', len(validEnds), 'tFin = ', tFin)
 
-P = {t: [] for t in range(tFin)}
+P = {t: [] for t in range(1, tFin + 1)}
 P[tFin] = validEnds
 
 def revHist(h, prevPath):
@@ -218,6 +261,7 @@ for t in range(tFin):
         for q in P[tFin - t]:
             if p not in P[tFin - t - 1] and q[0][0] in succ[tFin - t - 1, p[0][0]]:
                 P[tFin - t - 1].append(p)
+                break
 #    for p in P[tFin - t - 1]:
 #        print('|pred| = ', len(pred[tFin - t]))
 ##        print('COST: ', p[1])
@@ -244,15 +288,24 @@ for t in range(tFin):
 #                break
     print(len(P[tFin - t]))
 
-for t in range(1, tFin):
-    for p in P[t]:
-        count = 0
-        for q in P[t]:
-            if p == q:
-                count += 1
-        if count >= 2:
-            print('OH DEAR')
-T = range(tFin + 1)
+#for t in range(1, tFin):
+#    for p in P[t]:
+#        count = 0
+#        for q in P[t]:
+#            if p == q:
+#                count += 1
+#        if count >= 2:
+#            print('OH DEAR')
+T = range(1, tFin + 1)
+#num = [0 for t in T[:-1]]
+#
+#for t in T[:-1]:
+#    for p in P[t]:
+#        for q in P[t + 1]:
+#            if q[0][0] in succ[t, p[0][0]]:
+#                num[t] += 1
+#print(num)
+#msvcrt.getch()
 #Restricted Master Problem
 RMP = Model('Search Paths')
 
@@ -264,12 +317,14 @@ RMP.setObjective(quicksum(p[1] * Z[p, t] for (p, t) in Z), GRB.MINIMIZE)
 
 #constraints
 onePathPerTime = {t: RMP.addConstr(quicksum(Z[p, t] for p in P[t]) == 1) for t in T}
+continuity = {(p, t): RMP.addConstr(Z[p, t + 1] <= quicksum(Z[q, t] for q in P[t]
+                if p[0][0] in succ[t, q[0][0]])) for t in T[:-1] for p in P[t + 1]}
     
-RMPval = RMP.optimize()
+RMP.optimize()
+RMPval = RMP.objVal + 1
 
 
-
-MIPval, _, time = MIP(probType, numSearchers, 19, 15, maxTime, graph, Edges, prob)
+MIP, _, time = MIP(probType, numSearchers, 19, 15, maxTime, graph, Edges, prob)
 print('RMP: ', RMPval)
-print('MIP: ', MIPVal)
+print('MIP: ', MIP.objVal)
 displayGraph(graph)
