@@ -321,7 +321,7 @@ continuity = {(p, t): RMP.addConstr(Z[p, t + 1] <= quicksum(Z[q, t] for q in P[t
                 if p[0][0] in succ[t, q[0][0]])) for t in T[:-1] for p in P[t + 1]}
     
 RMP.optimize()
-RMPval = RMP.objVal + 1
+RMPval = RMP.objVal + 1/2
 
 
 MIP, _, time = MIP(probType, numSearchers, 19, 15, maxTime, graph, Edges, prob)
