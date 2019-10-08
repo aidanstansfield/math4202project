@@ -1,5 +1,5 @@
 from gurobipy import quicksum, GRB, Model
-from problemGen import generateNetwork, genArcs, genNodes, displayGraph, indexToXY
+from problemGen import generateNetwork, genArcs, genNodes, genEdges, displayGraph, indexToXY, generateProbabilities
 from time import clock
 from matplotlib import pyplot, animation
 import msvcrt
@@ -65,7 +65,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     # min time for searchers to search every arc
 #    graph, p, edges = genEx(probType)
 #    #sets
-
+    
     M = range(0, numEdges)
     N = range(0, numNodes)
     L = range(0, 2 * numEdges)
@@ -75,6 +75,11 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     #gen network - p is pdf and edges is set of edges
     if graph is None:
         graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
+    if p is None:
+        p, edges = generateProbabilities(graph, probType)
+    if edges is None:
+        edges = genEdges(graph)
+        
     #    displayGraph(graph)
     S = {}
     E = {}
@@ -140,11 +145,17 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     
     
     
-    # Changinge Branch priority based on aggregation
+#     Changinge Branch priority based on aggregation
 #    XT = mip.addVar(vtype=GRB.INTEGER)
 #    mip.addConstr(XT==quicksum(X.values()))
 #    XT.BranchPriority = 10
 #    mip.setParam('GURO_PAR_MINBPFORBID', 1)
+    
+    
+    
+    mip.setParam('OutputFlag', 0)
+    #Set the maximum time to 1000 seconds
+    mip.setParam('TimeLimit', 1000.0)
     
     mip.optimize()
     time = mip.Runtime
@@ -156,16 +167,21 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
         "L": L,
         "maxTime": maxTime
     }
-    visualiseStrategy(state, arcs, graph)
-
+    
+#    visualiseStrategy(state, arcs, graph)
+    
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
 
 if __name__ == "__main__":
-    mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19)
+#    mip, graph, _ = MIP(UNIFORM, 2, 50, 35, 100)
 
-mip, graph, _ = MIP(UNIFORM, 3, 19, 15, 25)
-
+    mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 25)
+    
+#    mip, graph, _ = MIP(UNIFORM, 2, 19, 15, 25, graph=graph)
+    
+#    p, edges = generateProbabilities(graph, UNIFORM)
+#    mip, graph, _ = MIP(UNIFORM, 2, 19, 15, 25, graph=graph, p=p, edges=edges)
 
 # 3358408176512599648
 

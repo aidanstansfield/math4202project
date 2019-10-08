@@ -7,13 +7,15 @@ from collections import defaultdict
 from random import randint, choice, seed, randrange
 from datetime import datetime
 import sys
+import os
+import ast
 # For displaying the generated networks
 # If using the anaconda python environment (as recomended by gurobi) run:
 #    conda install -c anaconda networkx
 import networkx as nx
 import matplotlib.pyplot as plot
 
-GRID_SIZE = 10
+GRID_SIZE = 20
 
 
 # Display a square lattice of dimensions size (default 10)
@@ -140,7 +142,7 @@ def generateProbabilities(graph, probType):
         # gen uniformly dist. probs
         pUn = 1/numEdges
         edgeNums = numEdges
-    elif probType == 1:
+    else:
         # define number of edges st. Cl: Cm: Ch app = 1: 2: 1
         edgeFloor = numEdges//4
         edgeMod = numEdges % 4  # num edges mod 4
@@ -157,10 +159,23 @@ def generateProbabilities(graph, probType):
         p = 1/(edgeNums[0] + 2 * edgeNums[1] + 3 * edgeNums[2])
         pNon = [p, 2 * p, 3 * p]
         pNon = [p for p in pNon]
+
+    edges = genEdges(graph)
+    prob = {}
+    if pUn is not None:
+        # uniform case
+        for e in edges:
+            prob[e] = pUn
     else:
-        print('Invalid Graph Type')
-        return -1
-    return pUn, pNon, edgeNums
+        generatedTypes = [0, 0, 0]
+        for e in edges:
+            edgeType = randint(0, 2)
+            while generatedTypes[edgeType] == edgeNums[edgeType]:
+                edgeType = randint(0, 2)
+            prob[e] = pNon[edgeType]
+            generatedTypes[edgeType] += 1
+
+    return prob, edges
 
 
 def generateDense(edges, nodes, graph):
@@ -287,7 +302,6 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         bestNumEdges = getNumEdges(graph)
         bestGraph = graph
 
-        # or crowded:
         while (getNumEdges(graph) < a or getNumNodes(graph) < b) and retries < 50:
             graph.clear()
             graph, edgesToAdd = generateSparse(a, b, graph)
@@ -300,7 +314,6 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
                   bestNumEdges, "edges.")
             graph = bestGraph
 
-        # crowded, _ = checkCrowded(graph)
     else:
         # Dense network
         graph = generateDense(a, b, graph)
@@ -315,21 +328,23 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         connectedTest = None
 
     # assign probabilities to existing edges in graph
-    pUn, pNon, edgeNums = generateProbabilities(graph, probType)
-    edges = genEdges(graph)
-    prob = {}
-    if pUn is not None:
-        # uniform case
-        for e in edges:
-            prob[e] = pUn
-    else:
-        generatedTypes = [0, 0, 0]
-        for e in edges:
-            edgeType = randint(0, 2)
-            while generatedTypes[edgeType] == edgeNums[edgeType]:
-                edgeType = randint(0, 2)
-            prob[e] = pNon[edgeType]
-            generatedTypes[edgeType] += 1
+    # pUn, pNon, edgeNums = generateProbabilities(graph, probType)
+    prob, edges = generateProbabilities(graph, probType)
+
+    # edges = genEdges(graph)
+    # prob = {}
+    # if pUn is not None:
+    #     # uniform case
+    #     for e in edges:
+    #         prob[e] = pUn
+    # else:
+    #     generatedTypes = [0, 0, 0]
+    #     for e in edges:
+    #         edgeType = randint(0, 2)
+    #         while generatedTypes[edgeType] == edgeNums[edgeType]:
+    #             edgeType = randint(0, 2)
+    #         prob[e] = pNon[edgeType]
+    #         generatedTypes[edgeType] += 1
 
     return graph, prob, edges, initSeed
 
@@ -478,42 +493,40 @@ def getNumNodes(graph):
 
 
 # Write a graph to a file
-def writeGraph(graph, seed):
+def writeGraph(graph, seed, prob, path='./'):
     nodes = getNumNodes(graph)
     edges = getNumEdges(graph)
     graphClass = "M" + str(edges) + "N" + str(nodes)
     fileName = graphClass+"_"+str(seed)+".txt"
-
-    with open(fileName, 'w') as f:
-        f.write(str(dict(graph)))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path+fileName, 'w') as f:
+        f.write(str(dict(graph)) + '\n' + str(prob))
+    return path+fileName
 
 
 def readGraph(file):
     graph = defaultdict(set)
+    prob = {}
     try:
         with open(file, 'r') as f:
-            graph = f.read()
-        f.read()
+            graph = ast.literal_eval(f.readline())
+            prob = ast.literal_eval(f.readline())
     except FileNotFoundError as fne:
         print("File does not exist.")
     except ValueError as ve:
-        print("An error occured reading the file")
-    return graph
+        print("An error occured reading the file", ve)
+    return graph, prob
 
 
 if __name__ == "__main__":
-    sparseInstance, p1, _, _ = generateNetwork(60, 50, 0)
+    #    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
-    # sparseInstance, p1, _, _ = generateNetwork(200, 150, 0, 2086539324)
-    # leaf = genLeaf(sparseInstance)
-    # print(len(leaf))
-
+    sparseInstance, p1, _, _ = generateNetwork(19, 15, 1, 2084970100)
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
-    # denseInstance, p2, _, denseSeed = generateNetwork(50, 14, 0)
+    denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
 
-    # writeGraph(denseInstance, denseSeed)
     # readGraph("M20N10_327504534.txt")
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
-    displayGraph(sparseInstance)
+    # displayGraph(sparseInstance)
