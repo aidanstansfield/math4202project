@@ -156,7 +156,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
         "L": L,
         "maxTime": maxTime
     }
-#    visualiseStrategy(state, arcs, graph)
+    visualiseStrategy(state, arcs, graph)
 
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
@@ -164,7 +164,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
 if __name__ == "__main__":
     mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19)
 
-#mip, graph, _ = MIP(UNIFORM, 3, 19, 15, 25)
+mip, graph, _ = MIP(UNIFORM, 3, 19, 15, 25)
 
 
 # 3358408176512599648
