@@ -7,13 +7,15 @@ from collections import defaultdict
 from random import randint, choice, seed, randrange
 from datetime import datetime
 import sys
+import os
+import ast
 # For displaying the generated networks
 # If using the anaconda python environment (as recomended by gurobi) run:
 #    conda install -c anaconda networkx
 import networkx as nx
 import matplotlib.pyplot as plot
 
-GRID_SIZE = 10
+GRID_SIZE = 20
 
 
 # Display a square lattice of dimensions size (default 10)
@@ -140,7 +142,7 @@ def generateProbabilities(graph, probType):
         # gen uniformly dist. probs
         pUn = 1/numEdges
         edgeNums = numEdges
-    elif probType == 1:
+    else:
         # define number of edges st. Cl: Cm: Ch app = 1: 2: 1
         edgeFloor = numEdges//4
         edgeMod = numEdges % 4  # num edges mod 4
@@ -157,10 +159,23 @@ def generateProbabilities(graph, probType):
         p = 1/(edgeNums[0] + 2 * edgeNums[1] + 3 * edgeNums[2])
         pNon = [p, 2 * p, 3 * p]
         pNon = [p for p in pNon]
+
+    edges = genEdges(graph)
+    prob = {}
+    if pUn is not None:
+        # uniform case
+        for e in edges:
+            prob[e] = pUn
     else:
-        print('Invalid Graph Type')
-        return -1
-    return pUn, pNon, edgeNums
+        generatedTypes = [0, 0, 0]
+        for e in edges:
+            edgeType = randint(0, 2)
+            while generatedTypes[edgeType] == edgeNums[edgeType]:
+                edgeType = randint(0, 2)
+            prob[e] = pNon[edgeType]
+            generatedTypes[edgeType] += 1
+
+    return prob, edges
 
 
 def generateDense(edges, nodes, graph):
@@ -236,7 +251,7 @@ def generateSparse(edges, nodes, graph):
                 possibleNodes[n] = validNeighbours
                 uniqueEdges = sum(len(possibleNodes[n])
                                   for n in possibleNodes)//2
-        print(uniqueEdges, edges-numEdges)
+
         if uniqueEdges < edges-numEdges:
             edgesNeeded = edges-numEdges-uniqueEdges
             # Not enough spots to add a needed edge
@@ -286,8 +301,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         retries = 0
         bestNumEdges = getNumEdges(graph)
         bestGraph = graph
-        print(graph, bestNumEdges, end='\n\n\n')
-        # or crowded:
+
         while (getNumEdges(graph) < a or getNumNodes(graph) < b) and retries < 50:
             graph.clear()
             graph, edgesToAdd = generateSparse(a, b, graph)
@@ -299,8 +313,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
             print("Could not generate a graph with the required number of edges.\n Try using",
                   bestNumEdges, "edges.")
             graph = bestGraph
-        print(graph, bestNumEdges)
-        # crowded, _ = checkCrowded(graph)
+
     else:
         # Dense network
         graph = generateDense(a, b, graph)
@@ -315,21 +328,23 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         connectedTest = None
 
     # assign probabilities to existing edges in graph
-    pUn, pNon, edgeNums = generateProbabilities(graph, probType)
-    edges = genEdges(graph)
-    prob = {}
-    if pUn is not None:
-        # uniform case
-        for e in edges:
-            prob[e] = pUn
-    else:
-        generatedTypes = [0, 0, 0]
-        for e in edges:
-            edgeType = randint(0, 2)
-            while generatedTypes[edgeType] == edgeNums[edgeType]:
-                edgeType = randint(0, 2)
-            prob[e] = pNon[edgeType]
-            generatedTypes[edgeType] += 1
+    # pUn, pNon, edgeNums = generateProbabilities(graph, probType)
+    prob, edges = generateProbabilities(graph, probType)
+
+    # edges = genEdges(graph)
+    # prob = {}
+    # if pUn is not None:
+    #     # uniform case
+    #     for e in edges:
+    #         prob[e] = pUn
+    # else:
+    #     generatedTypes = [0, 0, 0]
+    #     for e in edges:
+    #         edgeType = randint(0, 2)
+    #         while generatedTypes[edgeType] == edgeNums[edgeType]:
+    #             edgeType = randint(0, 2)
+    #         prob[e] = pNon[edgeType]
+    #         generatedTypes[edgeType] += 1
 
     return graph, prob, edges, initSeed
 
@@ -374,35 +389,35 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 #     return graph, numEdges
 
 
-def checkCrowded(graph):
-    for n in graph.keys():
-        if n % GRID_SIZE != 0 and n % GRID_SIZE != 9 and (n > 20 or n < 80):
-            found = [n]
-            direction = 1
-            for m in range(n - 1, n + 2):
-                if m in graph[n]:
-                    found.append(m)
-            if len(found) != 3:
-                continue
-            direction = 1
-            for m in range(n + GRID_SIZE - 1, n + GRID_SIZE + 2):
-                for f in found:
-                    if m in graph[f] and m not in found:
-                        found.append(m)
-            if len(found) == 3:
-                direction = -1
-                for m in range(n - GRID_SIZE - 1, GRID_SIZE * n + 2):
-                    for f in found:
-                        if m in graph[f] and m not in found:
-                            found.append(m)
-            if len(found) == 6:
-                for m in range(n + 2 * direction * GRID_SIZE - 1, n + 2 * direction * GRID_SIZE + 2):
-                    for f in found:
-                        if m in graph[f] and m not in found:
-                            found.append(m)
-            if len(found) == 9:
-                return 1, found
-    return 0, found
+# def checkCrowded(graph):
+#     for n in graph.keys():
+#         if n % GRID_SIZE != 0 and n % GRID_SIZE != 9 and (n > 20 or n < 80):
+#             found = [n]
+#             direction = 1
+#             for m in range(n - 1, n + 2):
+#                 if m in graph[n]:
+#                     found.append(m)
+#             if len(found) != 3:
+#                 continue
+#             direction = 1
+#             for m in range(n + GRID_SIZE - 1, n + GRID_SIZE + 2):
+#                 for f in found:
+#                     if m in graph[f] and m not in found:
+#                         found.append(m)
+#             if len(found) == 3:
+#                 direction = -1
+#                 for m in range(n - GRID_SIZE - 1, GRID_SIZE * n + 2):
+#                     for f in found:
+#                         if m in graph[f] and m not in found:
+#                             found.append(m)
+#             if len(found) == 6:
+#                 for m in range(n + 2 * direction * GRID_SIZE - 1, n + 2 * direction * GRID_SIZE + 2):
+#                     for f in found:
+#                         if m in graph[f] and m not in found:
+#                             found.append(m)
+#             if len(found) == 9:
+#                 return 1, found
+#     return 0, found
 
 
 def genEdges(graph):
@@ -443,78 +458,75 @@ def getNumNodes(graph):
 # edges/nodes and gives statements alerting if any bad stuff occurs
 # if no printed error messages, network should be fine
 
-def genMult(a, b, probType, N):
-    gs = {}
-    es = {}
-    p = {}
-    bad = []
-    for i in range(N):
-        gs[i], p[i], es[i] = generateNetwork(a, b, probType)
-        if len(es[i]) < a:
-            bad.append(i)
-            print('####################### TOO FEW EDGES ######################')
-            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-        elif len(es[i]) > a:
-            bad.append(i)
-            print('####################### TOO MANY EDGES ######################')
-            print(len(es[i]), len(es[i]), 'i = ', i)
-        if len(gs[i].keys()) > b:
-            bad.append(i)
-            print('####################### TOO MANY NODES ######################')
-            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-        if len(gs[i].keys()) < b:
-            bad.append(i)
-            print('####################### TOO FEW NODES ######################')
-            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-        print(checkCrowded(gs[i]), 'i = ', i)
-        displayLattice(graph=gs[i])
+# def genMult(a, b, probType, N):
+#     gs = {}
+#     es = {}
+#     p = {}
+#     bad = []
+#     for i in range(N):
+#         gs[i], p[i], es[i] = generateNetwork(a, b, probType)
+#         if len(es[i]) < a:
+#             bad.append(i)
+#             print('####################### TOO FEW EDGES ######################')
+#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#         elif len(es[i]) > a:
+#             bad.append(i)
+#             print('####################### TOO MANY EDGES ######################')
+#             print(len(es[i]), len(es[i]), 'i = ', i)
+#         if len(gs[i].keys()) > b:
+#             bad.append(i)
+#             print('####################### TOO MANY NODES ######################')
+#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#         if len(gs[i].keys()) < b:
+#             bad.append(i)
+#             print('####################### TOO FEW NODES ######################')
+#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#         print(checkCrowded(gs[i]), 'i = ', i)
+#         displayLattice(graph=gs[i])
 
-    if len(bad) > 0:
-        print('**************************BAD ALERT******************************')
-        print(bad)
-    return gs, es, p, bad
-# if len(discon) > 0:
-#    print('**************************DISCONNECTED******************************')
+#     if len(bad) > 0:
+#         print('**************************BAD ALERT******************************')
+#         print(bad)
+#     return gs, es, p, bad
+# # if len(discon) > 0:
+# #    print('**************************DISCONNECTED******************************')
 
 
 # Write a graph to a file
-def writeGraph(graph, seed):
+def writeGraph(graph, seed, prob, path='./'):
     nodes = getNumNodes(graph)
     edges = getNumEdges(graph)
     graphClass = "M" + str(edges) + "N" + str(nodes)
     fileName = graphClass+"_"+str(seed)+".txt"
-
-    with open(fileName, 'w') as f:
-        f.write(str(dict(graph)))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path+fileName, 'w') as f:
+        f.write(str(dict(graph)) + '\n' + str(prob))
+    return path+fileName
 
 
 def readGraph(file):
     graph = defaultdict(set)
+    prob = {}
     try:
         with open(file, 'r') as f:
-            graph = f.read()
-        f.read()
+            graph = ast.literal_eval(f.readline())
+            prob = ast.literal_eval(f.readline())
     except FileNotFoundError as fne:
         print("File does not exist.")
     except ValueError as ve:
-        print("An error occured reading the file")
-    return graph
+        print("An error occured reading the file", ve)
+    return graph, prob
 
 
 if __name__ == "__main__":
 #    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(200, 150, 0, 2086539324)
-    leaf = genLeaf(sparseInstance)
-    print(len(leaf))
-
-
+    sparseInstance, p1, _, _ = generateNetwork(19, 15, 1, 2084970100)
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
-    # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
+    denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
 
-    # writeGraph(denseInstance, denseSeed)
     # readGraph("M20N10_327504534.txt")
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
-    displayGraph(sparseInstance)
+    # displayGraph(sparseInstance)
