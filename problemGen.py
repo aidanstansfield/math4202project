@@ -236,7 +236,7 @@ def generateSparse(edges, nodes, graph):
                 possibleNodes[n] = validNeighbours
                 uniqueEdges = sum(len(possibleNodes[n])
                                   for n in possibleNodes)//2
-        print(uniqueEdges, edges-numEdges)
+
         if uniqueEdges < edges-numEdges:
             edgesNeeded = edges-numEdges-uniqueEdges
             # Not enough spots to add a needed edge
@@ -286,7 +286,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         retries = 0
         bestNumEdges = getNumEdges(graph)
         bestGraph = graph
-        print(graph, bestNumEdges, end='\n\n\n')
+
         # or crowded:
         while (getNumEdges(graph) < a or getNumNodes(graph) < b) and retries < 50:
             graph.clear()
@@ -299,7 +299,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
             print("Could not generate a graph with the required number of edges.\n Try using",
                   bestNumEdges, "edges.")
             graph = bestGraph
-        print(graph, bestNumEdges)
+
         # crowded, _ = checkCrowded(graph)
     else:
         # Dense network
@@ -374,35 +374,35 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 #     return graph, numEdges
 
 
-def checkCrowded(graph):
-    for n in graph.keys():
-        if n % GRID_SIZE != 0 and n % GRID_SIZE != 9 and (n > 20 or n < 80):
-            found = [n]
-            direction = 1
-            for m in range(n - 1, n + 2):
-                if m in graph[n]:
-                    found.append(m)
-            if len(found) != 3:
-                continue
-            direction = 1
-            for m in range(n + GRID_SIZE - 1, n + GRID_SIZE + 2):
-                for f in found:
-                    if m in graph[f] and m not in found:
-                        found.append(m)
-            if len(found) == 3:
-                direction = -1
-                for m in range(n - GRID_SIZE - 1, GRID_SIZE * n + 2):
-                    for f in found:
-                        if m in graph[f] and m not in found:
-                            found.append(m)
-            if len(found) == 6:
-                for m in range(n + 2 * direction * GRID_SIZE - 1, n + 2 * direction * GRID_SIZE + 2):
-                    for f in found:
-                        if m in graph[f] and m not in found:
-                            found.append(m)
-            if len(found) == 9:
-                return 1, found
-    return 0, found
+# def checkCrowded(graph):
+#     for n in graph.keys():
+#         if n % GRID_SIZE != 0 and n % GRID_SIZE != 9 and (n > 20 or n < 80):
+#             found = [n]
+#             direction = 1
+#             for m in range(n - 1, n + 2):
+#                 if m in graph[n]:
+#                     found.append(m)
+#             if len(found) != 3:
+#                 continue
+#             direction = 1
+#             for m in range(n + GRID_SIZE - 1, n + GRID_SIZE + 2):
+#                 for f in found:
+#                     if m in graph[f] and m not in found:
+#                         found.append(m)
+#             if len(found) == 3:
+#                 direction = -1
+#                 for m in range(n - GRID_SIZE - 1, GRID_SIZE * n + 2):
+#                     for f in found:
+#                         if m in graph[f] and m not in found:
+#                             found.append(m)
+#             if len(found) == 6:
+#                 for m in range(n + 2 * direction * GRID_SIZE - 1, n + 2 * direction * GRID_SIZE + 2):
+#                     for f in found:
+#                         if m in graph[f] and m not in found:
+#                             found.append(m)
+#             if len(found) == 9:
+#                 return 1, found
+#     return 0, found
 
 
 def genEdges(graph):
@@ -443,36 +443,36 @@ def getNumNodes(graph):
 # edges/nodes and gives statements alerting if any bad stuff occurs
 # if no printed error messages, network should be fine
 
-def genMult(a, b, probType, N):
-    gs = {}
-    es = {}
-    p = {}
-    bad = []
-    for i in range(N):
-        gs[i], p[i], es[i] = generateNetwork(a, b, probType)
-        if len(es[i]) < a:
-            bad.append(i)
-            print('####################### TOO FEW EDGES ######################')
-            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-        elif len(es[i]) > a:
-            bad.append(i)
-            print('####################### TOO MANY EDGES ######################')
-            print(len(es[i]), len(es[i]), 'i = ', i)
-        if len(gs[i].keys()) > b:
-            bad.append(i)
-            print('####################### TOO MANY NODES ######################')
-            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-        if len(gs[i].keys()) < b:
-            bad.append(i)
-            print('####################### TOO FEW NODES ######################')
-            print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-        print(checkCrowded(gs[i]), 'i = ', i)
-        displayLattice(graph=gs[i])
+# def genMult(a, b, probType, N):
+#     gs = {}
+#     es = {}
+#     p = {}
+#     bad = []
+#     for i in range(N):
+#         gs[i], p[i], es[i] = generateNetwork(a, b, probType)
+#         if len(es[i]) < a:
+#             bad.append(i)
+#             print('####################### TOO FEW EDGES ######################')
+#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#         elif len(es[i]) > a:
+#             bad.append(i)
+#             print('####################### TOO MANY EDGES ######################')
+#             print(len(es[i]), len(es[i]), 'i = ', i)
+#         if len(gs[i].keys()) > b:
+#             bad.append(i)
+#             print('####################### TOO MANY NODES ######################')
+#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#         if len(gs[i].keys()) < b:
+#             bad.append(i)
+#             print('####################### TOO FEW NODES ######################')
+#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
+#         print(checkCrowded(gs[i]), 'i = ', i)
+#         displayLattice(graph=gs[i])
 
-    if len(bad) > 0:
-        print('**************************BAD ALERT******************************')
-        print(bad)
-    return gs, es, p, bad
+#     if len(bad) > 0:
+#         print('**************************BAD ALERT******************************')
+#         print(bad)
+#     return gs, es, p, bad
 # if len(discon) > 0:
 #    print('**************************DISCONNECTED******************************')
 
@@ -502,16 +502,15 @@ def readGraph(file):
 
 
 if __name__ == "__main__":
-#    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
+    sparseInstance, p1, _, _ = generateNetwork(60, 50, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(200, 150, 0, 2086539324)
-    leaf = genLeaf(sparseInstance)
-    print(len(leaf))
-
+    # sparseInstance, p1, _, _ = generateNetwork(200, 150, 0, 2086539324)
+    # leaf = genLeaf(sparseInstance)
+    # print(len(leaf))
 
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
-    # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
+    # denseInstance, p2, _, denseSeed = generateNetwork(50, 14, 0)
 
     # writeGraph(denseInstance, denseSeed)
     # readGraph("M20N10_327504534.txt")
