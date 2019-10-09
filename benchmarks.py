@@ -1,5 +1,5 @@
 from problemGen import generateNetwork, writeGraph, readGraph
-# from mip import MIP
+from mip import MIP
 import re
 import os
 
@@ -58,34 +58,36 @@ if __name__ == '__main__':
     UNIFORM = 0
     NON_UNIFORM = 1
 
-    with open('results.txt', 'r') as f:
+    with open('NonSameResults_M19N15_M25N18.txt', 'r') as f:
         results = eval(f.read())
 
-    displayResults(results, classes, 3, 10)
-    # results = {}
-    # for c in classes:
-    #     numEdges, numNodes = parseClass(c)
-    #     for k in range(1, 3):
-    #         for pType in ['Uniform', 'Non-Uniform']:
-    #             path = './problemInstances/'+c+'/'+pType+'/'
-    #             count = 0
-    #             for file in os.listdir(path):
-    #                 try:
-    #                     graph, prob = readGraph(path+file)
-    #                 # Found a results.txt, so skip it
-    #                 except SyntaxError:
-    #                     print("skipped", file)
-    #                     continue
-    #                 count += 1
+#    displayResults(results, classes, 3, 10)
+    results = {}
+    for c in classes:
+        numEdges, numNodes = parseClass(c)
+        for k in range(2, 0, -1):
+             for pType in ['Uniform', 'Non-Uniform']:
+                 path = './problemInstances/'+c+'/'+pType+'/'
+                 count = 0
+                 for file in os.listdir(path):
+                     try:
+                         graph, prob = readGraph(path+file)
+                     # Found a results.txt, so skip it
+                     except SyntaxError:
+                         print("skipped", file)
+                         continue
+                     count += 1
 
-    #                 # ProbType param doesn't matter since p is passed in
-    #                 mip, graph, _ = MIP(
-    #                     UNIFORM, k, numEdges, numNodes, 2*numEdges//k, graph=graph, p=prob)
-    #                 results[c, pType, k, count] = (
-    #                     mip.objVal, mip.RunTime, mip.MipGap)
-    #                 print((c, pType, k, count): (mip.objVal, mip.RunTime, mip.mipGap))
-    #                 print('Complete', c, pType, "searchers:", k)
+                     # ProbType param doesn't matter since p is passed in
+                     mip, graph, _ = MIP(
+                         UNIFORM, k, numEdges, numNodes, 2*numEdges//k, graph=graph, p=prob)
+                     
+                     results[c, pType, k, count] = (mip.objVal, mip.RunTime, mip.MipGap)
+                     
+                     print((c, pType, k, count), ":", (mip.objVal, mip.RunTime, mip.mipGap))
+                     print('Complete', c, pType, "searchers:", k)
 
-    #             with open(path+'results.txt', 'w') as f:
-    #                 f.write(str(results))
-    # print(results)
+                 with open(path+'results.txt', 'w') as f:
+                     f.write(str(results))
+    print(results)
+    displayResults(results, classes, 2, instances)
