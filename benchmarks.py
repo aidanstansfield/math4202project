@@ -23,10 +23,27 @@ def generateProblems(classes, num):
 
 def displayResults(results, classes, maxSearchers, instances):
     for c in classes:
+        print("*****", c, "*****")
         for k in range(1, maxSearchers+1):
             for pType in ['Uniform', 'Non-Uniform']:
+                print(c, " K", k, "-", pType, sep='')
+                objTotal = 0
+                timeTotal = 0
+                gapTotal = 0
                 for i in range(1, instances+1):
-                    obj, time, mipgap = results[c, pType, k, i]
+
+                    if (c, pType, k, i) in results:
+                        obj, time, mipgap = results[c, pType, k, i]
+                        print(i, " |Obj:", obj, " |Runtime:",
+                              time, " |MipGap:", mipgap, sep='\t')
+                        objTotal += obj
+                        timeTotal += time
+                        gapTotal += mipgap
+
+                print('Avg Obj:', objTotal/instances)
+                print('Avg Time', timeTotal/instances)
+                print('Avg Gap', gapTotal/instances)
+                print()
 
 
 if __name__ == '__main__':
@@ -37,10 +54,14 @@ if __name__ == '__main__':
     classes = ['M19N15', 'M24N18']
 
     instances = 10
-    generateProblems(classes, instances)
+    # generateProblems(classes, instances)
     UNIFORM = 0
     NON_UNIFORM = 1
 
+    with open('results.txt', 'r') as f:
+        results = eval(f.read())
+
+    displayResults(results, classes, 3, 10)
     # results = {}
     # for c in classes:
     #     numEdges, numNodes = parseClass(c)
