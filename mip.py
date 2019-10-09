@@ -1,5 +1,5 @@
 from gurobipy import quicksum, GRB, Model
-from problemGen import generateNetwork, genArcs, genNodes, displayGraph, indexToXY, genLeaf
+from problemGen import generateNetwork, genArcs, genNodes, genEdges, displayGraph, indexToXY, generateProbabilities, genLeaf
 from time import clock
 from matplotlib import pyplot, animation
 import msvcrt
@@ -65,7 +65,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     # min time for searchers to search every arc
 #    graph, p, edges = genEx(probType)
 #    #sets
-
+    
     M = range(0, numEdges)
     N = range(0, numNodes)
     L = range(0, 2 * numEdges)
@@ -75,6 +75,11 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     #gen network - p is pdf and edges is set of edges
     if graph is None:
         graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
+    if p is None:
+        p, edges = generateProbabilities(graph, probType)
+    if edges is None:
+        edges = genEdges(graph)
+        
     #    displayGraph(graph)
     S = {}
     E = {}
@@ -144,11 +149,17 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
         mip.addConstr(quicksum(X[1, arcs.index(leaf)] for leaf in leafs) >= 1)
     
     
-    # Changinge Branch priority based on aggregation
+#     Changinge Branch priority based on aggregation
 #    XT = mip.addVar(vtype=GRB.INTEGER)
 #    mip.addConstr(XT==quicksum(X.values()))
 #    XT.BranchPriority = 10
 #    mip.setParam('GURO_PAR_MINBPFORBID', 1)
+    
+    
+    
+    mip.setParam('OutputFlag', 0)
+    #Set the maximum time to 1000 seconds
+    mip.setParam('TimeLimit', 1000.0)
     
     mip.optimize()
     time = mip.Runtime
@@ -166,7 +177,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
 
 
 if __name__ == "__main__":
-    if True:
+    if False:
         mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19, seed=748345644471475368)
     else:
         numEdges = 19
@@ -226,7 +237,6 @@ if __name__ == "__main__":
         # define alpha as in paper
         defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(p[edges[m]] * Y[t, m] for m in 
                     M)) for t in T}
-        # mip.addConstr(alpha[0] == 1)
         # update search info after every time step
         updateSearch = {(t, m): mip.addConstr(Y[t, m] <= Y[t - 1, m] + 
                         quicksum(O[l, m] * X[t, l] for l in L)) for t in 
@@ -243,9 +253,6 @@ if __name__ == "__main__":
         # must use at least 1 leaf if uniform
         if probType == UNIFORM and len(leafs) != 0:
             mip.addConstr(quicksum(X[1, arcs.index(leaf)] for leaf in leafs) >= 1)
-        
-        
-        
         # Changinge Branch priority based on aggregation
     #    XT = mip.addVar(vtype=GRB.INTEGER)
     #    mip.addConstr(XT==quicksum(X.values()))
@@ -263,9 +270,9 @@ if __name__ == "__main__":
             "maxTime": maxTime
         }
         visualiseStrategy(state, arcs, graph)
-        
-#mip, graph, _ = MIP(UNIFORM, 3, 19, 15, 25)
-
+    
+#    p, edges = generateProbabilities(graph, UNIFORM)
+#    mip, graph, _ = MIP(UNIFORM, 2, 19, 15, 25, graph=graph, p=p, edges=edges)
 
 # 3358408176512599648
 
