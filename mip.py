@@ -158,8 +158,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     
     
     mip.setParam('OutputFlag', 0)
-    #Set the maximum time to 1000 seconds
-    mip.setParam('TimeLimit', 1000.0)
+    #Set the maximum time to 900 seconds
+    mip.setParam('TimeLimit', 900.0)
     
     mip.optimize()
     time = mip.Runtime
