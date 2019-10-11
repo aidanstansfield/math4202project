@@ -1,5 +1,5 @@
 from gurobipy import quicksum, GRB, Model
-from problemGen import generateNetwork, genArcs, genNodes, displayGraph, indexToXY
+from problemGen import generateNetwork, genArcs, genNodes, genEdges, displayGraph, indexToXY, generateProbabilities, genLeaf
 from time import clock
 from matplotlib import pyplot, animation
 import msvcrt
@@ -65,7 +65,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     # min time for searchers to search every arc
 #    graph, p, edges = genEx(probType)
 #    #sets
-
+    
     M = range(0, numEdges)
     N = range(0, numNodes)
     L = range(0, 2 * numEdges)
@@ -75,6 +75,11 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     #gen network - p is pdf and edges is set of edges
     if graph is None:
         graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
+    if p is None:
+        p, edges = generateProbabilities(graph, probType)
+    if edges is None:
+        edges = genEdges(graph)
+        
     #    displayGraph(graph)
     S = {}
     E = {}
@@ -84,6 +89,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
 #    print(arcs)
     # gen set of nodes
     nodes = genNodes(graph)
+    leafs = genLeaf(graph)
 #    print('E: ', edges)
     # define values for functions S, E and O and store in dict.
     for l in L:
@@ -138,13 +144,22 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     # limit y so that every edge is searched by T
     {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
     
+    # must use at least 1 leaf if uniform
+    if probType == UNIFORM and len(leafs) != 0:
+        mip.addConstr(quicksum(X[1, arcs.index(leaf)] for leaf in leafs) >= 1)
     
     
-    # Changinge Branch priority based on aggregation
+#     Changinge Branch priority based on aggregation
 #    XT = mip.addVar(vtype=GRB.INTEGER)
 #    mip.addConstr(XT==quicksum(X.values()))
 #    XT.BranchPriority = 10
 #    mip.setParam('GURO_PAR_MINBPFORBID', 1)
+    
+    
+    
+    mip.setParam('OutputFlag', 0)
+    #Set the maximum time to 900 seconds
+    mip.setParam('TimeLimit', 900.0)
     
     mip.optimize()
     time = mip.Runtime
@@ -160,12 +175,88 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
 
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
+if __name__ == "__main__":
+    if False:
+        mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19, seed=748345644471475368)
+    else:
+        numEdges = 19
+        numNodes = 15
+        seed = 748345644471475368
+        K = 2
+        maxTime = 2 * numEdges
+        probType = 0
+        M = range(0, numEdges)
+        N = range(0, numNodes)
+        L = range(0, 2 * numEdges)
+        T = range(0, maxTime + 1)
+    
+        #data
+        #gen network - p is pdf and edges is set of edges
+        graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
+        S = {}
+        E = {}
+        O = {}
+        # gen set of arcs
+        arcs = genArcs(graph)
+        # gen set of nodes
+        nodes = genNodes(graph)
+        leafs = genLeaf(graph)
+        for l in L:
+            for m in M:
+                if arcs[l] == edges[m] or arcs[l] == edges[m][::-1]:
+                    O[l, m] = 1
+                else:
+                    O[l, m] = 0
+            for n in N:
+                if arcs[l][0] == nodes[n]:
+                    S[l, n] = 1
+                    E[l, n] = 0
+                elif arcs[l][1] == nodes[n]:
+                    E[l, n] = 1
+                    S[l, n] = 0
+                else:
+                    S[l, n] = 0
+                    E[l, n] = 0
 
-#if __name__ == "__main__":
-#    mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19)
-#
-#mip, graph, _ = MIP(UNIFORM, 3, 19, 15, 25)
-
+        # define alpha as in paper
+        defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(p[edges[m]] * Y[t, m] for m in 
+                    M)) for t in T}
+        # update search info after every time step
+        updateSearch = {(t, m): mip.addConstr(Y[t, m] <= Y[t - 1, m] + 
+                        quicksum(O[l, m] * X[t, l] for l in L)) for t in 
+                        T[1:] for m in M}
+        # conserve arc flow on nodes
+        consFlow = {(t, n): mip.addConstr(quicksum(E[l, n] * X[t, l] for l in L) == 
+                              quicksum(S[l, n]* X[t + 1, l] for l in L)) for t in 
+                                T[1: -1] for n in N}
+        # initially, no edges have been searched
+        initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
+        # limit y so that every edge is searched by T
+        {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
+        
+        # must use at least 1 leaf if uniform
+        if probType == UNIFORM and len(leafs) != 0:
+            mip.addConstr(quicksum(X[1, arcs.index(leaf)] for leaf in leafs) >= 1)
+        # Changinge Branch priority based on aggregation
+    #    XT = mip.addVar(vtype=GRB.INTEGER)
+    #    mip.addConstr(XT==quicksum(X.values()))
+    #    XT.BranchPriority = 10
+    #    mip.setParam('GURO_PAR_MINBPFORBID', 1)
+        
+        mip.optimize()
+        time = mip.Runtime
+    
+        state = {
+            "X": X,
+            "Y": Y,
+            "T": T,
+            "L": L,
+            "maxTime": maxTime
+        }
+        visualiseStrategy(state, arcs, graph)
+    
+#    p, edges = generateProbabilities(graph, UNIFORM)
+#    mip, graph, _ = MIP(UNIFORM, 2, 19, 15, 25, graph=graph, p=p, edges=edges)
 
 # 3358408176512599648
 
