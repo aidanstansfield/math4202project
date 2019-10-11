@@ -161,10 +161,10 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
 
-if __name__ == "__main__":
-    mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19)
-
-mip, graph, _ = MIP(UNIFORM, 3, 19, 15, 25)
+#if __name__ == "__main__":
+#    mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19)
+#
+#mip, graph, _ = MIP(UNIFORM, 3, 19, 15, 25)
 
 
 # 3358408176512599648
