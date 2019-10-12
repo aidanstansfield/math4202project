@@ -175,7 +175,6 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
 
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
-
 if __name__ == "__main__":
     if False:
         mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19, seed=748345644471475368)
@@ -218,21 +217,6 @@ if __name__ == "__main__":
                 else:
                     S[l, n] = 0
                     E[l, n] = 0
-        
-        mip = Model("Model searchers searching for a randomly distributed immobile" \
-                    "target on a unit network")
-        
-        # variables
-        X = {(t, l): mip.addVar(vtype=GRB.BINARY) for t in T[1:] for l in L}
-        Y = {(t, m): mip.addVar(vtype=GRB.BINARY) for t in T for m in M}
-        alpha = {t: mip.addVar() for t in T}
-        
-        # objective
-        mip.setObjective(quicksum((alpha[t-1]+alpha[t])/2 for t in T[1:]), GRB.MINIMIZE)
-        
-        # constraints
-        # num arcs searched can't exceed num searchers- implicitly defines capacity
-        searcherLim = {t: mip.addConstr(quicksum(X[t, l] for l in L) <= K) for t in T[1:]}
 
         # define alpha as in paper
         defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(p[edges[m]] * Y[t, m] for m in 
