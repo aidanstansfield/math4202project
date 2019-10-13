@@ -1,3 +1,9 @@
 .vscode/settings.json
 __pycache__/
 gurobi.log
+*.log
+report_section/Data_Report.aux
+report_section/Data_Report.fdb_latexmk
+report_section/Data_Report.fls
+report_section/Data_Report.pdf
+report_section/Data_Report.synctex.gz
