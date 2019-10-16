@@ -1,8 +1,9 @@
-from gurobipy import quicksum, GRB, Model
+from gurobipy import quicksum, GRB, Model, max_, min_
 from problemGen import generateNetwork, genArcs, genNodes, genEdges, displayGraph, indexToXY, generateProbabilities, genLeaf
 from time import clock
 from matplotlib import pyplot, animation
 import msvcrt
+from math import inf
 
 UNIFORM = 0
 NON_UNIFORM = 1
@@ -79,19 +80,15 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
         p, edges = generateProbabilities(graph, probType)
     if edges is None:
         edges = genEdges(graph)
-        
-    #    displayGraph(graph)
     S = {}
     E = {}
     O = {}
     # gen set of arcs
     arcs = genArcs(graph)
-#    print(arcs)
     # gen set of nodes
     nodes = genNodes(graph)
     leafs = genLeaf(graph)
-#    print('E: ', edges)
-    # define values for functions S, E and O and store in dict.
+    leafIndices = [arcs.index(leaf) for leaf in leafs]
     for l in L:
         for m in M:
             if arcs[l] == edges[m] or arcs[l] == edges[m][::-1]:
@@ -111,7 +108,6 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     
     mip = Model("Model searchers searching for a randomly distributed immobile" \
                 "target on a unit network")
-    
     # variables
     X = {(t, l): mip.addVar(vtype=GRB.BINARY) for t in T[1:] for l in L}
     Y = {(t, m): mip.addVar(vtype=GRB.BINARY) for t in T for m in M}
@@ -121,16 +117,12 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     mip.setObjective(quicksum((alpha[t-1]+alpha[t])/2 for t in T[1:]), GRB.MINIMIZE)
     
     # constraints
-    
     # num arcs searched can't exceed num searchers- implicitly defines capacity
     searcherLim = {t: mip.addConstr(quicksum(X[t, l] for l in L) <= K) for t in T[1:]}
-    # capacity of flow on each arc
-    #    lowerBound = {(t, l): mip.addConstr(X[t, l] >= 0) for t in T[1:] for l in L}
-    # lower bound on flow
+
     # define alpha as in paper
     defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(p[edges[m]] * Y[t, m] for m in 
                 M)) for t in T}
-    # mip.addConstr(alpha[0] == 1)
     # update search info after every time step
     updateSearch = {(t, m): mip.addConstr(Y[t, m] <= Y[t - 1, m] + 
                     quicksum(O[l, m] * X[t, l] for l in L)) for t in 
@@ -142,28 +134,15 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     # initially, no edges have been searched
     initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
     # limit y so that every edge is searched by T
-    {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
+    mustFindTarget = {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
     
     # must use at least 1 leaf if uniform
     if probType == UNIFORM and len(leafs) != 0:
-        mip.addConstr(quicksum(X[1, arcs.index(leaf)] for leaf in leafs) >= 1)
+        startAtLeaf = mip.addConstr(quicksum(X[1, l] for l in leafIndices) >= 1)
     
-    
-#     Changinge Branch priority based on aggregation
-#    XT = mip.addVar(vtype=GRB.INTEGER)
-#    mip.addConstr(XT==quicksum(X.values()))
-#    XT.BranchPriority = 10
-#    mip.setParam('GURO_PAR_MINBPFORBID', 1)
-    
-    
-    
-    mip.setParam('OutputFlag', 0)
-    #Set the maximum time to 1000 seconds
     mip.setParam('TimeLimit', 1000.0)
-    
+    mip.setParam("Method",2)
     mip.optimize()
-    time = mip.Runtime
-
     state = {
         "X": X,
         "Y": Y,
@@ -172,25 +151,52 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
         "maxTime": maxTime
     }
     visualiseStrategy(state, arcs, graph)
-
     return mip, graph, time#, X, p, edges, O, arcs, L, M, T, alpha
 
+# Floyd-Warshall algorithm
+def shortest_paths(graph):
+    V = graph.keys()
+    dist = {}
+    for v in V:
+        dist[v] = {}
+        for v2 in V:
+            dist[v][v2] = inf
+    for v in V:
+        dist[v][v] = 0
+        for v2 in graph[v]:
+            dist[v][v2] = 1
+    for k in V:
+        for i in V:
+            for j in V:
+                if dist[i][j] > dist[i][k] + dist[k][j]:
+                    dist[i][j] = dist[i][k] + dist[k][j]
+    return dist
 
+"""
+from_node - starting node (note it is the actual node, not an index in L)
+to_edge - the edge that we want to know the distance to
+distances - a list of distances from every node to every node
+returns the shortest distance to that edge (will be one end of that edge)
+"""
+def distance(from_node, to_edge, distances):
+    return min(distances[from_node][to_edge[i]] for i in range(2))
+    
 if __name__ == "__main__":
-    if False:
-        mip, graph, _ = MIP(UNIFORM, 1, 19, 15, 2*19, seed=748345644471475368)
+    if True:
+        # run mip
+        MIP(probType=UNIFORM,K=1,numEdges=19, numNodes=15, maxTime=38)
     else:
-        numEdges = 19
-        numNodes = 15
-        seed = 748345644471475368
-        K = 2
+        numEdges = 24
+        numNodes = 18
+        #seed = 748345644471475368
+        seed = 5628902086360812845
+        K = 1
         maxTime = 2 * numEdges
         probType = 0
         M = range(0, numEdges)
         N = range(0, numNodes)
         L = range(0, 2 * numEdges)
         T = range(0, maxTime + 1)
-    
         #data
         #gen network - p is pdf and edges is set of edges
         graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
@@ -202,6 +208,7 @@ if __name__ == "__main__":
         # gen set of nodes
         nodes = genNodes(graph)
         leafs = genLeaf(graph)
+        leafIndices = [arcs.index(leaf) for leaf in leafs]
         for l in L:
             for m in M:
                 if arcs[l] == edges[m] or arcs[l] == edges[m][::-1]:
@@ -221,7 +228,6 @@ if __name__ == "__main__":
         
         mip = Model("Model searchers searching for a randomly distributed immobile" \
                     "target on a unit network")
-        
         # variables
         X = {(t, l): mip.addVar(vtype=GRB.BINARY) for t in T[1:] for l in L}
         Y = {(t, m): mip.addVar(vtype=GRB.BINARY) for t in T for m in M}
@@ -248,20 +254,57 @@ if __name__ == "__main__":
         # initially, no edges have been searched
         initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
         # limit y so that every edge is searched by T
-        {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
+        mustFindTarget = {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
         
         # must use at least 1 leaf if uniform
         if probType == UNIFORM and len(leafs) != 0:
-            mip.addConstr(quicksum(X[1, arcs.index(leaf)] for leaf in leafs) >= 1)
-        # Changinge Branch priority based on aggregation
-    #    XT = mip.addVar(vtype=GRB.INTEGER)
-    #    mip.addConstr(XT==quicksum(X.values()))
-    #    XT.BranchPriority = 10
-    #    mip.setParam('GURO_PAR_MINBPFORBID', 1)
+            startAtLeaf = mip.addConstr(quicksum(X[1, l] for l in leafIndices) >= 1)
         
+        """ NEEDS BENCHMARK
+        # add a constraint that only permits
+        # from what i've tested, when adding to the original MIP, it can speed things up
+        # however, when used with the other leaf node constraint (which speeds things up a lot),
+        # it seems to perform worse than just using the other leaf node constraint
+                
+        leafConstraints = {(t, l): mip.addConstr(X[t, l] <= 1 - 
+                           quicksum(Y[t - 1 , m] for m in M if O[l, m]))
+                            for t in T[1:] for l in L if arcs[l][::-1] in leafs}
+        """
+        """ NEEDS BENCHMARK
+        # add a constraint that only permits an arc to be searched if it either
+        # a) puts us closer to an unsearched edge
+        # b) all edges have already been searched
+        
+        distances = shortest_paths(graph)
+        closer = {}
+        further = {}
+        for l in L:
+            closer[l] = []
+            further[l] = []
+            for m in M:
+                if distance(arcs[l][1], edges[m], distances) < distance(arcs[l][0], edges[m], distances):
+                    closer[l].append(m)
+                elif arcs[l] == edges[m] or arcs[l] == edges[m][::-1]:
+                    closer[l].append(m)
+                else:
+                    further[l].append(m)
+        
+        numEdgesUnsearched = {t: mip.addVar(vtype=GRB.INTEGER) for t in T[1:]}
+        someEdgesUnsearched = {t: mip.addVar(vtype=GRB.BINARY) for t in T[1:]}
+        
+        for t in T[1:]:
+            mip.addConstr(numEdgesUnsearched[t] == quicksum(1-Y[t, m] for m in M))
+            mip.addConstr(someEdgesUnsearched[t] == min_(1, numEdgesUnsearched[t]))
+        
+        
+        moveTowardsUnsearched = {(t, l): mip.addConstr(X[t, l] <= 
+                                quicksum(1 - Y[t - 1, m] for m in closer[l]) +
+                                1 - someEdgesUnsearched[t - 1])
+                                for t in T[2:] for l in L}
+        """
+        mip.setParam('TimeLimit', 1000.0)
+        mip.setParam("Method",2)
         mip.optimize()
-        time = mip.Runtime
-    
         state = {
             "X": X,
             "Y": Y,
@@ -270,21 +313,8 @@ if __name__ == "__main__":
             "maxTime": maxTime
         }
         visualiseStrategy(state, arcs, graph)
-    
-#    p, edges = generateProbabilities(graph, UNIFORM)
-#    mip, graph, _ = MIP(UNIFORM, 2, 19, 15, 25, graph=graph, p=p, edges=edges)
-
-# 3358408176512599648
 
 # SLow:
 # 4772197386045408510
 # 6726931912431499781
 # 2600597230088613908
-
-#
-#ob = [0 for i in range(10)]
-#time = [0 for i in range(10)]
-#gs = {}
-#for i in range(10):
-#    ob[i], gs[i], time[i] = MIP(1, 1, 19, 15, 30)
-#avET = sum(ob)/len(ob)
