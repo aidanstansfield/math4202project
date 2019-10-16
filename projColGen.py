@@ -11,20 +11,20 @@ import random
 #some lower bound
 EPS = 0.001
 
-a = 19
-b = 15
+a = 30
+b = 24
 probType = 0
 graph, prob, Edges, seed = generateNetwork(a, b, probType)
 
 Arcs = genArcs(graph)
 Nodes = genNodes(graph)
-numSearchers = 2
+numSearchers = 4
 K = range(numSearchers)
 maxTime = 50
 
 #solve MIP for graph
-mip, _, time = MIP(probType, numSearchers, a, b, maxTime, graph, Edges, prob)
-print('**************MIP OBJECTIVE VAL: ', mip.objVal, '*********************')
+#mip, _, time = MIP(probType, numSearchers, a, b, maxTime, graph, Edges, prob)
+#print('**************MIP OBJECTIVE VAL: ', mip.objVal, '*********************')
 
 #distance (represented as units in the horizontal and vertical in a tuple)
 #between two arcs
@@ -148,8 +148,7 @@ tVal = math.floor(len(Edges)/numSearchers * 1/2)
 print('------------------Generating Starting states------------------')
 startSeg[0] = [(s, updateHist(initH, s)) for s in startStates]
 for s in startSeg[0]:
-    succ[1, s[0]] = list(itertools.product(*[[x for x in arcCon[a] if
-                    len(arcCon[x])] for a in s[0]]))
+    succ[1, s[0]] = list(itertools.product(*[[x for x in arcCon[a]]for a in s[0]]))
     
 print('Num States: ', len(startSeg[0]))
 print('t = 0')
@@ -177,7 +176,7 @@ for t in range(1, tVal + 1):
     for p in endSeg[t - 1]:
         arcOptions = []
         for a in p[0]:
-            conList = [x for x in Arcs if a in arcCon[x] if len(arcCon[x]) >= 2]
+            conList = [x for x in Arcs if a in arcCon[x] if len(arcCon[x])]
             arcOptions.append(conList)
         pred[t - 1, p[0]] = list(itertools.product(*arcOptions))
         for x in pred[t - 1, p[0]]:
@@ -195,7 +194,10 @@ def edgeInPathSeg(seg, e):
 
 #extend startSegs until we find paths that connect to paths in endSegs and 
 #all remaining unexplored edges are in the end path
+print('----------')
 print('tVal = ', tVal)
+print('----------')
+
 t = tVal + 1
 done = False
 #msvcrt.getch()
@@ -286,7 +288,6 @@ Z = {(p, t): RMP.addVar(vtype = GRB.BINARY) for t in T for p in S[t]}
 #objective
 RMP.setObjective(quicksum(Cost(p, t) * Z[p, t] for (p, t) in Z), GRB.MINIMIZE)
 
-
 #constraints
 print('constr1')
 onePathPerTime = {t: RMP.addConstr(quicksum(Z[p, t] for p in S[t]) >= 1)
@@ -302,8 +303,10 @@ onePathPerTime = {t: RMP.addConstr(quicksum(Z[p, t] for p in S[t]) >= 1)
 RMP.optimize()
 
 #print out objective values for both models as well as run times
-print('MIP: ', mip.objVal, time)
-print('RMP: ', RMP.objVal + 1, RMP.Runtime)
+#print('MIP: ', mip.objVal, time)
+#add 1.5 to account for 0.5 factor of alpha[0] in MIP and 1 unit of time to 
+#reach end
+print('RMP: ', RMP.objVal + 1.5, RMP.Runtime)
 
 #display graph used
 displayGraph(graph)
