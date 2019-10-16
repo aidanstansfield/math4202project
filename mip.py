@@ -140,7 +140,9 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     if probType == UNIFORM and len(leafs) != 0:
         startAtLeaf = mip.addConstr(quicksum(X[1, l] for l in leafIndices) >= 1)
     
-    mip.setParam('TimeLimit', 1000.0)
+    #mip.setParam('OutputFlag', 0)
+    #Set the maximum time to 900 seconds
+    mip.setParam('TimeLimit', 900.0)
     mip.setParam("Method",2)
     mip.optimize()
     state = {
@@ -180,16 +182,16 @@ returns the shortest distance to that edge (will be one end of that edge)
 """
 def distance(from_node, to_edge, distances):
     return min(distances[from_node][to_edge[i]] for i in range(2))
-    
+
 if __name__ == "__main__":
-    if True:
+    if False:
         # run mip
         MIP(probType=UNIFORM,K=1,numEdges=19, numNodes=15, maxTime=38)
     else:
-        numEdges = 24
-        numNodes = 18
-        #seed = 748345644471475368
-        seed = 5628902086360812845
+        numEdges = 19
+        numNodes = 15
+        seed = 748345644471475368
+        #seed = 5628902086360812845
         K = 1
         maxTime = 2 * numEdges
         probType = 0
