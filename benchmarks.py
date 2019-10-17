@@ -1,6 +1,6 @@
 from problemGen import generateNetwork, writeGraph, readGraph
 from mip import MIP
-from mipBP import *
+#from mipBP import *
 import re
 import os
 
@@ -80,33 +80,38 @@ def displayLatexFormat(results, classes, maxSearchers, instances):
             print('\end{tabular}')
             print('\end{table}')
             
-def runBenchmarks(classes, maxSearchers=2, probType=['Uniform', 'Non-Uniform']):
+def runBenchmarks(classes,improvements, maxSearchers=2, probType=['Uniform', 'Non-Uniform']):
+    results = {}
     for c in classes:
         numEdges, numNodes = parseClass(c)
         for k in range(maxSearchers, 0, -1):
-             for pType in probType:
-                 path = './problemInstances/'+c+'/'+pType+'/'
-                 count = 0
-                 for file in os.listdir(path):
-                     try:
-                         graph, prob = readGraph(path+file)
-                     # Found a results.txt, so skip it
-                     except SyntaxError:
-                         print("skipped", file)
-                         continue
-                     count += 1
-                     #Hacky way to get seed
-                     seed = file.split('.txt')[0].split(c+'_')[1]
-                     # ProbType param doesn't matter since p is passed in
-                     mip, graph, _ = MIP(
-                         UNIFORM, k, numEdges, numNodes, 2*numEdges//k, graph=graph, p=prob)
+            for pType in probType:
+                path = './problemInstances/'+c+'/'+pType+'/'
+                count = 0
+                for file in os.listdir(path):
+                    try:
+                        graph, prob = readGraph(path+file)
+                    # Found a results.txt, so skip it
+                    except SyntaxError:
+                        print("skipped", file)
+                        continue
+                    count += 1
+                    #Hacky way to get seed
+                    seed = file.split('.txt')[0].split(c+'_')[1]
+                    # ProbType param doesn't matter since p is passed in
+                    mip, graph, _ = MIP(
+                        0, k, numEdges, numNodes, 2*numEdges//k, 
+                        graph=graph, prob=prob, improvements=improvements)
 
-                     results[c, pType, k, count] = (mip.objVal, mip.RunTime, mip.MipGap, seed)
+                    results[c, pType, k, count] = (mip.objVal, mip.RunTime, mip.MipGap, seed)
 
-                     print((c, pType, k, count), ":", (mip.objVal, mip.RunTime, mip.mipGap))
-                     print('Complete', c, pType, "searchers:", k)
-
-                 with open(path+'results.txt', 'w') as f:
+                    print((c, pType, k, count), ":", (mip.objVal, mip.RunTime, mip.mipGap))
+                    print('Complete', c, pType, "searchers:", k)
+                problem = ''
+                for label in improvements:
+                    if improvements[label]:
+                        problem += label + "_"
+                with open(path+problem+'results.txt', 'w') as f:
                      f.write(str(results))
     return results
 
@@ -117,17 +122,71 @@ if __name__ == '__main__':
     #               'M50N14']
 
     classes = ['M19N15', 'M24N18']
-
-    instances = 10
+    improvements = {
+        "tighter_T_bound": False,
+        "start_at_leaf_constraint": True,
+        "start_at_leaf_BP": False,
+        "dont_visit_searched_leaves": False,
+        "travel_towards_unsearched": False,
+        "branch_direction": False,
+        "barrier_log": False,
+        "Y_cts": False,
+        "early_X_BP": False,
+        "Y_BP": False,
+        "high_prob_edges_BP": False
+    }
+    runBenchmarks(classes, improvements=improvements)
+    improvements = {
+        "tighter_T_bound": False,
+        "start_at_leaf_constraint": False,
+        "start_at_leaf_BP": False,
+        "dont_visit_searched_leaves": True,
+        "travel_towards_unsearched": False,
+        "branch_direction": False,
+        "barrier_log": False,
+        "Y_cts": False,
+        "early_X_BP": False,
+        "Y_BP": False,
+        "high_prob_edges_BP": False
+    }
+    runBenchmarks(classes, improvements=improvements)
+    improvements = {
+        "tighter_T_bound": False,
+        "start_at_leaf_constraint": False,
+        "start_at_leaf_BP": False,
+        "dont_visit_searched_leaves": False,
+        "travel_towards_unsearched": True,
+        "branch_direction": False,
+        "barrier_log": False,
+        "Y_cts": False,
+        "early_X_BP": False,
+        "Y_BP": False,
+        "high_prob_edges_BP": False
+    }
+    runBenchmarks(classes, improvements=improvements)
+    improvements = {
+        "tighter_T_bound": False,
+        "start_at_leaf_constraint": False,
+        "start_at_leaf_BP": False,
+        "dont_visit_searched_leaves": False,
+        "travel_towards_unsearched": False,
+        "branch_direction": False,
+        "barrier_log": False,
+        "Y_cts": True,
+        "early_X_BP": False,
+        "Y_BP": False,
+        "high_prob_edges_BP": False
+    }
+    runBenchmarks(classes, improvements=improvements)
+    
+    #classes = ['M19N15']
     # generateProblems(classes, instances)
-    UNIFORM = 0
-    NON_UNIFORM = 1
 #    with open('BranchPriorityResults.txt', 'r') as f:
 #        results = eval(f.read())
 #    print(results)
 #    displayResults(results, classes, 2, instances)
 #    displayLatexFormat(results, classes, 2, instances)
-    results = {}
+    
 #    for c in classes:
 #        with open(c + 'results.txt', 'r') as f:
 #            temp = eval(f.read())
@@ -137,4 +196,4 @@ if __name__ == '__main__':
 #    displayResults(results, classes, 2, instances)
 #    displayLatexFormat(results, classes, 2, instances)
     
-    runBenchmarks(classes)
+    
