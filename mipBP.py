@@ -123,6 +123,7 @@ def MIPBP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, 
     leafArcs = genLeaf(graph)
     #set of all arcConnections
     arcCon = genSuccessors(graph, Arcs)
+    displayGraph(graph)
     
     # define values for functions S, E and O and store in dict.
     for a in Arcs:
@@ -141,7 +142,7 @@ def MIPBP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, 
             else:
                 S[a, n] = 0
                 E[a, n] = 0
-    denseEdges = getDense(Edges, Arcs, arcCon, O)
+#    denseEdges = getDense(Edges, Arcs, arcCon, O)
 #    print(denseEdges)
 #    for d in denseEdges:
 #        if d not in Edges:
@@ -152,16 +153,26 @@ def MIPBP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, 
     # variables
     X = {(t, a): mip.addVar(vtype = GRB.BINARY) for t in T[1:] for a in Arcs}
     for (t, a) in X:
-        X[t, a].BranchPriority = max(1, math.ceil(2 * maxTime) - 5 * t)
-    Y = {(t, e): mip.addVar(vtype=GRB.BINARY) for t in T for e in Edges}
-    YT = {t: mip.addVar(vtype = GRB.INTEGER) for t in range(1, 4)}
+        if a in leafArcs and t == 1:
+            for x in arcCon[a]:
+                if x in leafArcs:
+                    X[t, a].BranchPriority = 10
+                    break
+            else:
+                X[t, a].BranchPriority = 15
+        else:
+            X[t, a].BranchPriority = max(1, 2 * maxTime - 5 * t)
+    Y = {(t, e): mip.addVar() for t in T for e in Edges}
+#    Y = {(t, e): mip.addVar(vtype=GRB.BINARY) for t in T for e in Edges}
+    YT = {t: mip.addVar() for t in range(1, 4)}
     c = {t: mip.addConstr(quicksum(Y[t, e] for e in Edges) == YT[t]) for t in YT}
-    for t in YT:
-        YT[t].BranchPriority = 10 - 2 * t
-    alpha = {t: mip.addVar() for t in T}
+    for t in YT: 
+        YT[t].BranchPriority = 10 - 2 * tther
+#    alpha = {t: mip.addVar() for t in T}
     
     # objective
-    mip.setObjective(quicksum((alpha[t-1]+alpha[t])/2 for t in T[1:]), GRB.MINIMIZE)
+    mip.setObjective(maxTime + 1/2 - quicksum(Y[t, e] * prob[e] for e in Edges
+                    for t in T[1:]), GRB.MINIMIZE)
     
     # constraints
     
@@ -171,8 +182,8 @@ def MIPBP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, 
     #    lowerBound = {(t, l): mip.addConstr(X[t, l] >= 0) for t in T[1:] for l in L}
     # lower bound on flow
     # define alpha as in paper
-    defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(prob[e] * Y[t, e] for e in 
-                Edges)) for t in T}
+#    defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(prob[e] * Y[t, e] for e in 
+#                Edges)) for t in T}
     # update search info after every time step
     updateSearch = {(t, e): mip.addConstr(Y[t, e] <= Y[t - 1, e] + 
                     quicksum(O[a, e] * X[t, a] for a in Arcs)) for t in 
@@ -185,11 +196,13 @@ def MIPBP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, 
     initY = {e: mip.addConstr(Y[0, e] == 0) for e in Edges}
     # limit y so that every edge is searched by T
     everyEdgeSearched = {e: mip.addConstr(Y[maxTime, e] == 1) for e in Edges}
+    yUB = {(t, e): mip.addConstr(Y[t, e] <= 1) for (t, e) in Y}
     
+   
     # must use at least 1 leaf if uniform
-    if probType == UNIFORM and len(leafArcs) != 0:
-        mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
-    elif probType == NON_UNIFORM:
+#    if probType == UNIFORM and len(leafArcs) != 0:
+#        mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
+    if probType == NON_UNIFORM:
         maxEdges = getMaxEdges(Edges, prob)
         XE = mip.addVar(vtype = GRB.INTEGER)
         mip.addConstr(XE == quicksum(X[1, a] for a in Arcs if getEdge(a, Edges, O)))
@@ -197,14 +210,22 @@ def MIPBP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, 
     
     #Set the maximum time to 900 seconds
     mip.setParam('TimeLimit', 900.0)
-    mip.setParam('OutputFlag', 0)
+    mip.setParam('OutputFlag', 1)
     mip.optimize()
     time = mip.Runtime
-
-    return mip, graph, time
+    
+#    numArcsSearched = sum(X[t, a].x for (t, a) in X)
+#    maxTime = 2 * math.ceil(numArcsSearched/K)
+    
+    return mip, graph, time, maxTime
 
 #seed = 568739401
 #seed = 829083004
-#seed = 2003701112
-#mip, graph, time = MIP(NON_UNIFORM, 1, 24, 18, 48, seed = seed)
+seed = 2003701112
+K = 1
+mip, graph, time, maxTime = MIPBP(UNIFORM, K, 19, 15, 38, seed = seed)
+
+#mip, _, time, _ = MIPBP(NON_UNIFORM, K, 24, 18, maxTime, seed = seed)
+
+
 

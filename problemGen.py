@@ -4,7 +4,8 @@ Created on Thu Aug 22 16:08:57 2019
 @author: Daniel
 """
 from collections import defaultdict
-from random import randint, choice, seed, randrange
+from random import *
+import random
 from datetime import datetime
 import sys
 import os
@@ -406,10 +407,11 @@ def readGraph(file):
     return graph, prob
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     #    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(500, 30, 1)
+#    sparseInstance, p1, _, _ = generateNetwork(24, 18, 1)
+
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
     # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
@@ -417,4 +419,4 @@ if __name__ == "__main__":
     # readGraph("M20N10_327504534.txt")
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
-    displayGraph(sparseInstance)
+#    displayGraph(sparseInstance)
