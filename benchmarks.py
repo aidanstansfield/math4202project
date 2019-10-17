@@ -80,11 +80,11 @@ def displayLatexFormat(results, classes, maxSearchers, instances):
             print('\end{tabular}')
             print('\end{table}')
             
-def runBenchmarks(classes, maxSearchers=2, pType=['Uniform', 'Non-Uniform']):
+def runBenchmarks(classes, maxSearchers=2, probType=['Uniform', 'Non-Uniform']):
     for c in classes:
         numEdges, numNodes = parseClass(c)
-        for k in range(2, 0, -1):
-             for pType in ['Uniform', 'Non-Uniform']:
+        for k in range(maxSearchers, 0, -1):
+             for pType in probType:
                  path = './problemInstances/'+c+'/'+pType+'/'
                  count = 0
                  for file in os.listdir(path):
