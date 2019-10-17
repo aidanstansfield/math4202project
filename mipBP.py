@@ -101,7 +101,7 @@ def getEdge(a, Edges, O):
         if O[a, e]:
             return e
 
-def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, prob = None, seed=None):
+def MIPBP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, prob = None, seed=None):
     #gen network - p is pdf and edges is set of edges
     if seed is None:
         seed = random.seed
@@ -142,10 +142,10 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, pr
                 S[a, n] = 0
                 E[a, n] = 0
     denseEdges = getDense(Edges, Arcs, arcCon, O)
-    print(denseEdges)
-    for d in denseEdges:
-        if d not in Edges:
-            print('ONO')
+#    print(denseEdges)
+#    for d in denseEdges:
+#        if d not in Edges:
+#            print('ONO')
     mip = Model("Model searchers searching for a randomly distributed immobile" \
                 "target on a unit network")
     
@@ -153,41 +153,11 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, pr
     X = {(t, a): mip.addVar(vtype = GRB.BINARY) for t in T[1:] for a in Arcs}
     for (t, a) in X:
         X[t, a].BranchPriority = max(1, math.ceil(2 * maxTime) - 5 * t)
-#    for (t, a) in X:
-#        X[t, a].BranchPriority = max(math.ceil(maxTime/(2 * t)), 1)
-#    XL = mip.addVar(vtype = GRB.INTEGER)
-#    mip.addConstr(XL == quicksum(X[t, a] for t in T[1:] for a in leafArcs))
-#    XL.BranchPriority = 10
-#    XT = mip.addVar(vtype = GRB.INTEGER)
-#    mip.addConstr(XT == quicksum(X[t, a] for a in Arcs for t in T[1:]))
-#    XT.BranchPriority = 5
-    
-#    XL = mip.addVar(vtype = GRB.INTEGER)
-#    mip.addConstr(XL == quicksum(X[1, a] for a in leafArcs))
-#    XL.BranchPriority = 25
-#    for t in T[1:]:
-#        print(max(math.ceil(maxTime/t) - 2, 1))
-#        
-#    msvcrt.getch()
     Y = {(t, e): mip.addVar(vtype=GRB.BINARY) for t in T for e in Edges}
     YT = {t: mip.addVar(vtype = GRB.INTEGER) for t in range(1, 4)}
     c = {t: mip.addConstr(quicksum(Y[t, e] for e in Edges) == YT[t]) for t in YT}
     for t in YT:
         YT[t].BranchPriority = 10 - 2 * t
-#    YT = {t: mip.addVar(vtype = GRB.INTEGER) for t in T[1:]}
-#    c = {t: mip.addConstr(YT[t] == quicksum(Y[t, e] for e in Edges))
-#            for t in T[1:]}
-#    for t in T[1:]:
-#        YT[t].BranchPriority =max(math.ceil(maxTime/t) - 2, 1)
-#    for (t, e) in Y:
-#        Y[t, e].BranchPriority = 3
-#    if K > 1:
-#        YT = {t: mip.addVar(vtype = GRB.INTEGER) for t in T[1:]}
-#        c = {t: mip.addConstr(YT[t] == quicksum(Y[t, e] for e in Edges)) for t in T[1:]}
-    #    defYT = mip.addConstr(YT == quicksum(Y[t, e] for e in Edgese
-    #            if e in leafArcs or (e[1], e[0]) in leafArcs))
-#    for t in T[1:]:
-#        YT[t].BranchPriority = 4
     alpha = {t: mip.addVar() for t in T}
     
     # objective
@@ -225,41 +195,16 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, Edges = None, pr
         mip.addConstr(XE == quicksum(X[1, a] for a in Arcs if getEdge(a, Edges, O)))
         XE.BranchPriority = 15
     
-    
-#     Changinge Branch priority based on aggregation
-#    XT = mip.addVar(vtype=GRB.INTEGER)
-#    mip.addConstr(XT==quicksum(X.values()))
-#    XT.BranchPriority = 10
-#    mip.setParam('GURO_PAR_MINBPFORBID', 1)
-    
-    
-    
-#    mip.setParam('OutputFlag', 0)
     #Set the maximum time to 900 seconds
     mip.setParam('TimeLimit', 900.0)
-#    mip.setParam('BranchDir', 1)
-#    mip.setParam('GURO_PAR_MINBPFORBID', 1)
-#    mip.setParam('MIPFocus', 1)
-#    mip.setParam('Method', 1)
+    mip.setParam('OutputFlag', 0)
     mip.optimize()
     time = mip.Runtime
-#    tMax = 0
-#    for t in T[1:]:
-#        t += min(1, sum(X[t, a].x for a in Arcs))
-    
-#    state = {
-#        "X": X,
-#        "Y": Y,
-#        "T": T,
-#        "L": L,
-#        "maxTime": maxTime
-#    }
-#    visualiseStrategy(state, arcs, graph)
 
     return mip, graph, time
 
 #seed = 568739401
 #seed = 829083004
-seed = 2003701112
-mip, graph, time = MIP(NON_UNIFORM, 1, 24, 18, 48, seed = seed)
+#seed = 2003701112
+#mip, graph, time = MIP(NON_UNIFORM, 1, 24, 18, 48, seed = seed)
 
