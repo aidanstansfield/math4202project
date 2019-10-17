@@ -39,7 +39,7 @@ def visualiseStrategy(state, graph):
             pyplot.annotate(str(key), (keyCoords[0], keyCoords[1]))
 
     def animate(t):
-        pyplot.title('Sparse: t=' + str(t+1))
+        pyplot.title('Sparse: t=' + str(t))
         if t == 0:
             return
 
@@ -58,7 +58,7 @@ def visualiseStrategy(state, graph):
 
     # Must be assigned to a variable or the animation doesn't play
     anim = animation.FuncAnimation(fig, animate, init_func=init,
-            frames=state["maxTime"], interval = 750, repeat=False)
+            frames=state["maxTime"], interval = 750)
 
     pyplot.show()
 
@@ -141,12 +141,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
 
     # must use at least 1 leaf if uniform
     if probType == UNIFORM and len(leafs) != 0:
-        mip.addConstr(quicksum(X[1, arcs.index(leaf)] for leaf in leafs) >= 1)
-
-
-#    mip.setParam('OutputFlag', 0)
-
-    startAtLeaf = mip.addConstr(quicksum(X[1, l] for l in leafIndices) >= 1)
+        startAtLeaf = mip.addConstr(quicksum(X[1, l] for l in leafIndices) >= 1)
 
     #mip.setParam('OutputFlag', 0)
     #Set the maximum time to 900 seconds
@@ -196,6 +191,7 @@ def distance(from_node, to_edge, distances):
 
 
 if __name__ == "__main__":
+    mip, graph, state = MIP(UNIFORM, 5, 50, 35, 20);
     if False:
         # run mip
         MIP(probType=UNIFORM,K=1,numEdges=19, numNodes=15, maxTime=38)
