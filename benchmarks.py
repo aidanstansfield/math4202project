@@ -1,5 +1,5 @@
 from problemGen import generateNetwork, writeGraph, readGraph
-from mip import MIP
+# from mip import MIP
 import re
 import os
 
@@ -45,16 +45,17 @@ def displayResults(results, classes, maxSearchers, instances):
                 print('Avg Gap', gapTotal/instances)
                 print()
 
+
 def displayLatexFormat(results, classes, maxSearchers, instances):
-    for val in range(3): # Make a table for each return value (objective,  runtime and mipgap)
+    for val in range(3):  # Make a table for each return value (objective,  runtime and mipgap)
         for c in classes:
             print('\n\\begin{table}')
             print('\\footnotesize')
             print(c)
-            print('\\begin{tabular}{', '|c|'*(instances+2), ' }')
+            print('\\begin{tabular} {', '|c'*(instances+2), '|}', sep='')
             print('\hline')
             print('Scenario', end=' ')
-            for i in range(1,instances+1):
+            for i in range(1, instances+1):
                 print('& ', i, sep='', end=' ')
             print('& Average\\\\')
             print('\hline')
@@ -63,10 +64,12 @@ def displayLatexFormat(results, classes, maxSearchers, instances):
                     print("K", k, "-", pType, sep='', end=' ')
                     totals = [0, 0, 0]
                     for i in range(1, instances+1):
-                        
-                        print('& ', round(results[c, pType, k, i][val], 3), sep='', end = ' ')
+
+                        print('& ', round(
+                            results[c, pType, k, i][val], 3), sep='', end=' ')
                         totals[val] += results[c, pType, k, i][val]
-                    print(round(totals[val]/instances, 3), '\\\\ \hline', sep='')
+                    print(round(totals[val]/instances, 3),
+                          '\\\\ \hline', sep='')
             print('\end{tabular}')
             print('\end{table}')
 
@@ -76,7 +79,7 @@ if __name__ == '__main__':
     #               'M30N9', 'M40N38', 'M40N16', 'M40N11', 'M50N35', 'M50N20',
     #               'M50N14']
 
-    classes = ['M19N15']#, 'M24N18']
+    classes = ['M19N15']  # , 'M24N18']
 
     instances = 10
     # generateProblems(classes, instances)
@@ -87,7 +90,7 @@ if __name__ == '__main__':
         results = eval(f.read())
 
 #    displayResults(results, classes, 2, 10)
-    
+
     displayLatexFormat(results, classes, 2, instances)
 #    results = {}
 #    for c in classes:
@@ -108,9 +111,9 @@ if __name__ == '__main__':
 #                     # ProbType param doesn't matter since p is passed in
 #                     mip, graph, _ = MIP(
 #                         UNIFORM, k, numEdges, numNodes, 2*numEdges//k, graph=graph, p=prob)
-#                     
+#
 #                     results[c, pType, k, count] = (mip.objVal, mip.RunTime, mip.MipGap)
-#                     
+#
 #                     print((c, pType, k, count), ":", (mip.objVal, mip.RunTime, mip.mipGap))
 #                     print('Complete', c, pType, "searchers:", k)
 #

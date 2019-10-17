@@ -9,19 +9,21 @@ from datetime import datetime
 import sys
 import os
 import ast
+import math
 # For displaying the generated networks
 # If using the anaconda python environment (as recomended by gurobi) run:
 #    conda install -c anaconda networkx
 import networkx as nx
 import matplotlib.pyplot as plot
 
-GRID_SIZE = 20
-
+GRID_SIZE = 10
 
 # Display a square lattice of dimensions size (default 10)
 # Can also pass a graph to display on the lattice
 # This is to be used for displaying sparse graphs in the nice grid format like
 # in the paper
+
+
 def displayLattice(size=GRID_SIZE, graph=None):
     for i in range(size):  # Rows
         for j in range(size):  # Columns
@@ -65,7 +67,8 @@ def displayGraph(graph):
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
     plot.figure(1, figsize=(10, 10), dpi=72)
-    if numEdges / numNodes >= 2:
+
+    if numEdges > (2*numNodes - math.ceil(2*math.sqrt(numNodes))):
         plot.title('Dense')
         plot.axis()
         dense = nx.Graph(graph)
@@ -76,9 +79,9 @@ def displayGraph(graph):
         # plot.axis([-1, 11, -1, 11])
 
         for key in graph.keys():
-            keyCoords = indexToXY(key)
+            keyCoords = indexToXY(key, GRID_SIZE)
             for node in graph[key]:
-                nodeCoord = indexToXY(node)
+                nodeCoord = indexToXY(node, GRID_SIZE)
                 plot.plot(
                     [keyCoords[0], nodeCoord[0]],
                     [keyCoords[1], nodeCoord[1]],
@@ -126,8 +129,9 @@ def gridNeighbours(index, size=GRID_SIZE):
 
 
 def indexToXY(index, size=GRID_SIZE):
-    x = index % GRID_SIZE
-    y = GRID_SIZE - (index - x) // GRID_SIZE - 1
+
+    x = index % size
+    y = size - (index - x) // size - 1
     return (x, y)
 
 
@@ -179,6 +183,11 @@ def generateProbabilities(graph, probType):
 
 
 def generateDense(edges, nodes, graph):
+    maxValid = (nodes)*(nodes-1)//2
+    if edges > maxValid:
+        print("WARNING: Too Many Edges. Using maximum valid edges (",
+              maxValid, ") for", nodes, "nodes.")
+        edges = maxValid
     edgesMade = 0
     for i in range(1, nodes+1):
         graph[i] = set()
@@ -201,7 +210,7 @@ def adjustLeafNodes(graph, edgesNeeded):
     for n in graph.keys():
         if len(graph[n]) == 1:
             neighboursInGraph = sum((i in graph.keys())
-                                    for i in gridNeighbours(n))
+                                    for i in gridNeighbours(n, GRID_SIZE))
 
             if neighboursInGraph == 1:
                 leaf.append(n)
@@ -222,15 +231,15 @@ def adjustLeafNodes(graph, edgesNeeded):
 def generateSparse(edges, nodes, graph):
     # Sparse network - like a manhattan network
     # randomly choose a starting point on the grid
+    print("GRID SIZE:", GRID_SIZE)
     start = randint(0, GRID_SIZE ** 2 - 1)
-
     # list of nodes we have visited (and thus will be added to the network)
     visited = [start]
     graph[start] = set()
     numEdges = 0
     while len(visited) < nodes:
         current = choice(visited)
-        validNeighbours = tuple(x for x in gridNeighbours(current)
+        validNeighbours = tuple(x for x in gridNeighbours(current, GRID_SIZE)
                                 if x is not None)
         unvisited = [v for v in validNeighbours if v not in visited]
 
@@ -244,8 +253,9 @@ def generateSparse(edges, nodes, graph):
             numEdges += 1
     if numEdges < edges:
         possibleNodes = {}
+        uniqueEdges = 0
         for n in graph.keys():
-            validNeighbours = list(x for x in gridNeighbours(n)
+            validNeighbours = list(x for x in gridNeighbours(n, GRID_SIZE)
                                    if x in graph.keys() and n not in graph[x])
             if validNeighbours:
                 possibleNodes[n] = validNeighbours
@@ -253,6 +263,7 @@ def generateSparse(edges, nodes, graph):
                                   for n in possibleNodes)//2
 
         if uniqueEdges < edges-numEdges:
+
             edgesNeeded = edges-numEdges-uniqueEdges
             # Not enough spots to add a needed edge
             graph = adjustLeafNodes(graph, edgesNeeded)
@@ -263,6 +274,7 @@ def generateSparse(edges, nodes, graph):
 
             # Pick a neighbour from the possible ones calculated above
             edgeNode2 = choice(possibleNodes[edgeNode1])
+            print(possibleNodes, edgeNode1, edgeNode2)
             possibleNodes[edgeNode1].remove(edgeNode2)
             possibleNodes[edgeNode2].remove(edgeNode1)
             if len(possibleNodes[edgeNode1]) == 0:
@@ -273,6 +285,7 @@ def generateSparse(edges, nodes, graph):
             graph[edgeNode2].add(edgeNode1)
 
             numEdges += 1
+
     return graph, 0
 
 # Generate a network with the given number of edges and nodes
@@ -289,20 +302,25 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     # Seed the RNG
     seed(initSeed)
     print("Network Class: M", edges, "N", nodes, " Seed:", initSeed, sep="")
+    global GRID_SIZE
     a = edges
     b = nodes
-
+    if b > (GRID_SIZE ** 2):
+        GRID_SIZE = math.ceil(math.sqrt(b))
     # The network / graph is rperesented with nodes as keys,
     # and the nodes they connect to as values (edges are pairs of nodes)
     graph = defaultdict(set)
-    if a/b < 2:
+    # (a/b <= 2*(GRID_SIZE-1)/GRID_SIZE) or
+    print(a, 2*b - math.ceil(2*math.sqrt(b)))
+    if a <= (2*b - math.ceil(2*math.sqrt(b))):
         graph, edgesToAdd = generateSparse(a, b, graph)
-        # crowded, _ = checkCrowded(graph)
+
         retries = 0
         bestNumEdges = getNumEdges(graph)
         bestGraph = graph
 
-        while (getNumEdges(graph) < a or getNumNodes(graph) < b) and retries < 50:
+        # and retries < 50:
+        while (getNumEdges(graph) < a or getNumNodes(graph) < b):
             graph.clear()
             graph, edgesToAdd = generateSparse(a, b, graph)
             if getNumEdges(graph) + edgesToAdd > bestNumEdges:
@@ -315,6 +333,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
             graph = bestGraph
 
     else:
+        print("dense")
         # Dense network
         graph = generateDense(a, b, graph)
         # use network x to check if it's connected
@@ -328,96 +347,9 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         connectedTest = None
 
     # assign probabilities to existing edges in graph
-    # pUn, pNon, edgeNums = generateProbabilities(graph, probType)
     prob, edges = generateProbabilities(graph, probType)
 
-    # edges = genEdges(graph)
-    # prob = {}
-    # if pUn is not None:
-    #     # uniform case
-    #     for e in edges:
-    #         prob[e] = pUn
-    # else:
-    #     generatedTypes = [0, 0, 0]
-    #     for e in edges:
-    #         edgeType = randint(0, 2)
-    #         while generatedTypes[edgeType] == edgeNums[edgeType]:
-    #             edgeType = randint(0, 2)
-    #         prob[e] = pNon[edgeType]
-    #         generatedTypes[edgeType] += 1
-
     return graph, prob, edges, initSeed
-
-
-# def adjust1(graph, numEdges, a):
-#     #    print('Graph Adjust 1', numEdges)
-#     found = 0
-#     for i in graph.keys():
-#         for j in gridNeighbours(i):
-#             if j in graph.keys() and j not in graph[i] and j is not \
-#                     None and numEdges < a:
-#                 graph[i].add(j)
-#                 graph[j].add(i)
-#                 numEdges += 1
-#                 found += 1
-# #    print(found, ' edges added')
-# #    print('Post Adjust 1: ', numEdges)
-#     return graph, numEdges
-
-
-# def adjust2(graph, numEdges, a):
-#     #    print('Edge Adjust 2: ', numEdges)
-#     leaf = genLeaf(graph)
-#     for e in leaf:
-#         graph.pop(e[0])
-#         graph[e[1]].remove(e[0])
-#         numEdges -= 1
-# #        print('Edge Removed: ', numEdges)
-#         found = 0
-#         while found == 0:
-#             baseNode = choice(list(graph.keys()))
-#             neighbours = gridNeighbours(baseNode)
-#             for n in neighbours:
-#                 if n is not None and numEdges < a:
-#                     graph[baseNode].add(n)
-#                     graph[n].add(baseNode)
-#                     found += 1
-#                     numEdges += 1
-# #                    print('Edge Added: ', numEdges)
-#                     break
-# #    print('Post Adjust 2: ', numEdges)
-#     return graph, numEdges
-
-
-# def checkCrowded(graph):
-#     for n in graph.keys():
-#         if n % GRID_SIZE != 0 and n % GRID_SIZE != 9 and (n > 20 or n < 80):
-#             found = [n]
-#             direction = 1
-#             for m in range(n - 1, n + 2):
-#                 if m in graph[n]:
-#                     found.append(m)
-#             if len(found) != 3:
-#                 continue
-#             direction = 1
-#             for m in range(n + GRID_SIZE - 1, n + GRID_SIZE + 2):
-#                 for f in found:
-#                     if m in graph[f] and m not in found:
-#                         found.append(m)
-#             if len(found) == 3:
-#                 direction = -1
-#                 for m in range(n - GRID_SIZE - 1, GRID_SIZE * n + 2):
-#                     for f in found:
-#                         if m in graph[f] and m not in found:
-#                             found.append(m)
-#             if len(found) == 6:
-#                 for m in range(n + 2 * direction * GRID_SIZE - 1, n + 2 * direction * GRID_SIZE + 2):
-#                     for f in found:
-#                         if m in graph[f] and m not in found:
-#                             found.append(m)
-#             if len(found) == 9:
-#                 return 1, found
-#     return 0, found
 
 
 def genEdges(graph):
@@ -453,45 +385,6 @@ def getNumNodes(graph):
     return len(graph.keys())
 
 
-# to test if networks generated properly, run following script which generates
-# 1000 different networks and checks if they produce the right num of
-# edges/nodes and gives statements alerting if any bad stuff occurs
-# if no printed error messages, network should be fine
-
-# def genMult(a, b, probType, N):
-#     gs = {}
-#     es = {}
-#     p = {}
-#     bad = []
-#     for i in range(N):
-#         gs[i], p[i], es[i] = generateNetwork(a, b, probType)
-#         if len(es[i]) < a:
-#             bad.append(i)
-#             print('####################### TOO FEW EDGES ######################')
-#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-#         elif len(es[i]) > a:
-#             bad.append(i)
-#             print('####################### TOO MANY EDGES ######################')
-#             print(len(es[i]), len(es[i]), 'i = ', i)
-#         if len(gs[i].keys()) > b:
-#             bad.append(i)
-#             print('####################### TOO MANY NODES ######################')
-#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-#         if len(gs[i].keys()) < b:
-#             bad.append(i)
-#             print('####################### TOO FEW NODES ######################')
-#             print(len(gs[i].keys()), len(es[i]), 'i = ', i)
-#         print(checkCrowded(gs[i]), 'i = ', i)
-#         displayLattice(graph=gs[i])
-
-#     if len(bad) > 0:
-#         print('**************************BAD ALERT******************************')
-#         print(bad)
-#     return gs, es, p, bad
-# if len(discon) > 0:
-#    print('**************************DISCONNECTED******************************')
-
-
 # Write a graph to a file
 def writeGraph(graph, seed, prob, path='./'):
     nodes = getNumNodes(graph)
@@ -521,12 +414,12 @@ def readGraph(file):
 if __name__ == "__main__":
     #    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(19, 15, 1, 2084970100)
+    sparseInstance, p1, _, _ = generateNetwork(19, 15, 1)
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
-    denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
+    # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
 
     # readGraph("M20N10_327504534.txt")
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
-    # displayGraph(sparseInstance)
+    displayGraph(sparseInstance)
