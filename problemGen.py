@@ -4,7 +4,8 @@ Created on Thu Aug 22 16:08:57 2019
 @author: Daniel
 """
 from collections import defaultdict
-from random import randint, choice, seed, randrange
+from random import *
+import random
 from datetime import datetime
 import sys
 import os
@@ -135,7 +136,8 @@ def indexToXY(index, size=GRID_SIZE):
     return (x, y)
 
 
-def generateProbabilities(graph, probType):
+def generateProbabilities(graph, probType, seed):
+    random.seed( seed )
     pUn = None  # uniform prob
     pNon = None  # non-uniform prob
     # number of nodes
@@ -347,7 +349,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
         connectedTest = None
 
     # assign probabilities to existing edges in graph
-    prob, edges = generateProbabilities(graph, probType)
+    prob, edges = generateProbabilities(graph, probType, initSeed)
 
     return graph, prob, edges, initSeed
 
@@ -411,10 +413,10 @@ def readGraph(file):
     return graph, prob
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     #    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(19, 15, 1)
+#    sparseInstance, p1, _, _ = generateNetwork(24, 18, 1)
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
     # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
@@ -422,4 +424,4 @@ if __name__ == "__main__":
     # readGraph("M20N10_327504534.txt")
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
-    displayGraph(sparseInstance)
+#    displayGraph(sparseInstance)
