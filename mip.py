@@ -316,17 +316,19 @@ if __name__ == "__main__":
                                 1 - someEdgesUnsearched[t - 1])
                                 for t in T[2:] for l in L}
         """
-        mip.setParam('TimeLimit', 1000.0)
-        mip.setParam("Method",2)
-        mip.optimize()
-        state = {
-            "X": X,
-            "Y": Y,
-            "T": T,
-            "L": L,
-            "maxTime": maxTime
-        }
-        visualiseStrategy(state, arcs, graph)
+    mip.setParam('TimeLimit', 900.0)
+    mip.setParam('MipGap', 0)
+    mip.setParam('Method', 2)
+    mip.optimize()
+    state = {
+        "X": X,
+        "Y": Y,
+        "T": T,
+        "L": L,
+        "A": arcs,
+        "maxTime": maxTime
+    }
+    visualiseStrategy(state, graph)
 
 # SLow:
 # 4772197386045408510
