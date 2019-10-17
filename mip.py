@@ -23,7 +23,8 @@ def genNeighbours(edges):
     return neighbours
 
 
-def visualiseStrategy(state, Arcs, graph):
+def visualiseStrategy(state, graph):
+    arcs = state["A"]
     fig = pyplot.figure()
     
     def init():
@@ -39,7 +40,7 @@ def visualiseStrategy(state, Arcs, graph):
             pyplot.annotate(str(key), (keyCoords[0], keyCoords[1]))
 
     def animate(t):
-        pyplot.title('Sparse: t=' + str(t+1))
+        pyplot.title('Sparse: t=' + str(t))
         if t == 0:
             return
 
@@ -53,11 +54,12 @@ def visualiseStrategy(state, Arcs, graph):
                 XCoords = [indexToXY(a[0])[0], indexToXY(a[1])[0]]
                 YCoords = [indexToXY(a[0])[1], indexToXY(a[1])[1]]
                 pyplot.plot(XCoords, YCoords, 'r-',)
+#        if sum(i.x for i in state["X"].values()) == state[""]
 
 
     # Must be assigned to a variable or the animation doesn't play
     anim = animation.FuncAnimation(fig, animate, init_func=init,
-            frames=state["maxTime"], interval = 750, repeat=False)
+            frames=state["maxTime"], interval = 750)
 
     pyplot.show()
 
@@ -231,25 +233,28 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     #Run barrier algorithm for mip root node
     mip.setParam("Method",2)
     
+    #set optimality gap to 0
+    mip.setParam('MipGap', 0)
+    
     mip.optimize()
     
     #Display Search Path
     
-    ############## NOT CURRENTLY WORKING BECAUSE INDEXES CHANGED #############
-#    state = {
-#        "X": X,
-#        "Y": Y,
-#        "T": T,
-#        "A": Arcs,
-#        "maxTime": maxTime
-#    }
-#    visualiseStrategy(state, Arcs, graph)
-#    displayGraph(graph)
+    state = {
+        "X": X,
+        "Y": Y,
+        "T": T,
+        "L": L,
+        "A": arcs,
+        "maxTime": maxTime
+    }
+    visualiseStrategy(state, graph)
     
     #computation time
     time = mip.Runtime
     
     return mip, graph, time
+
 
 # Floyd-Warshall algorithm
 def shortest_paths(graph):
@@ -279,10 +284,8 @@ returns the shortest distance to that edge (will be one end of that edge)
 def distance(from_node, to_edge, distances):
     return min(distances[from_node][to_edge[i]] for i in range(2))
 
-
 seed = 2003701112
 MIP(probType=UNIFORM,K=1,numEdges=19, numNodes=15, maxTime=38, seed = seed)
-
 #if __name__ == "__main__":
 #    if True:
 #        # run mip
