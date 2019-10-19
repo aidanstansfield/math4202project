@@ -1,11 +1,13 @@
 from problemGen import generateNetwork, writeGraph, readGraph
-from mip import MIP
+# from mip import MIP
 #from mipBP import *
 import re
 import os
-
+import ast
 
 # Get the number of edges and nodes from a grraph class
+
+
 def parseClass(classType):
     return [int(x) for x in re.split(r'[MN]', classType)[1:]]
 
@@ -53,11 +55,14 @@ def displayResults(results, classes, maxSearchers, instances):
 
 # Display the generated results as a LaTeX table
 def displayLatexFormat(results, classes, maxSearchers, instances):
+    # Number of decimal places to round to
+    precision = 1
+
     # Make a table for each return value (objective, runtime and mipgap)
-    for val in range(3):
+    for resultType in range(3):
         for c in classes:
             print('\n\\begin{table}[H]')
-            print('\\scriptsize')
+            print('\\footnotesize')
             print(c)
             print('\\begin{tabular} {', '|c'*(instances+2), '|}', sep='')
             print('\hline')
@@ -68,19 +73,61 @@ def displayLatexFormat(results, classes, maxSearchers, instances):
             print('\hline')
             for k in range(1, maxSearchers+1):
                 for pType in ['Uniform', 'Non-Uniform']:
-                    print("K", k, "-", pType, sep='', end=' ')
+                    if pType == 'Uniform':
+                        probDisplay = '\\bar{\\rho}'
+                    else:
+                        probDisplay = '{\\rho}'
+                    print("$K", k, "-", probDisplay, '$', sep='', end=' ')
+
                     totals = [0, 0, 0]
                     for i in range(1, instances+1):
+                        resultVal = results[c, pType, k, i][resultType]
+                        if resultType == 1:
+                            displayResult = int(round(resultVal, precision))
+                        else:
+                            displayResult = round(resultVal, precision)
 
-                        print('& ', round(
-                            results[c, pType, k, i][val], 3), sep='', end=' ')
-                        totals[val] += results[c, pType, k, i][val]
-                    print(' & ', round(totals[val]/instances, 3),
+                        print('& ', displayResult,
+                              sep='', end=' ')
+                        totals[resultType] += results[c,
+                                                      pType, k, i][resultType]
+                    if resultType == 1:
+                        displayAverage = int(
+                            round(totals[resultType]/instances, precision))
+                    else:
+                        displayAverage = round(
+                            totals[resultType]/instances, precision)
+                    print(' & ', displayAverage,
                           '\\\\ \hline', sep='')
             print('\end{tabular}')
             print('\end{table}')
-            
-def runBenchmarks(classes,improvements, maxSearchers=2, probType=['Uniform', 'Non-Uniform']):
+        #     \begin{table}[H]
+        #     \footnotesize
+        #     Papers Results\\
+        #     \begin{tabular} {|c|c|c|c|c|c|c|c|c|c|c|c|}
+        #     \hline
+        #     Scenario & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & Average\\
+        #     \hline
+        #     $K1-\bar{\rho}$ & 12.5 & 12.6 & 12.2 & 12.7 & 12.3 & 12.5 & 12.5 & 12.9 & 12.6 & 12.4 & 12.5\\ \hline
+        #     $K1-\rho$ & 11.3 & 10.7 & 11.5 & 11.3 & 10.8 & 11.2 & 11.0 & 11.3 & 11.0 & 10.7 & 11.1\\ \hline
+        #     $K2-\bar{\rho}$ & 6.1 & 6.2 & 6.0 & 6.2 & 6.1 & 6.1 & 6.2 & 6.3 & 6.2 & 6.1 & 6.2\\ \hline
+        #     $K2-\rho$ & 5.3 & 5.2 & 5.5 & 5.5 & 5.3 & 5.4 & 5.3 & 5.5 & 5.4 & 5.3 & 5.4\\ \hline
+        #     \end{tabular}
+        # \end{table}
+
+
+def readResultFile(filePath):
+    try:
+        with open(filePath, 'r') as f:
+            results = ast.literal_eval(f.readline())
+    except FileNotFoundError as fne:
+        print("File does not exist.")
+    except ValueError as ve:
+        print("An error occured reading the file. The error was", ve)
+    return results
+
+
+def runBenchmarks(classes, improvements, maxSearchers=2, probType=['Uniform', 'Non-Uniform']):
     results = {}
     for c in classes:
         numEdges, numNodes = parseClass(c)
@@ -96,23 +143,25 @@ def runBenchmarks(classes,improvements, maxSearchers=2, probType=['Uniform', 'No
                         print("skipped", file)
                         continue
                     count += 1
-                    #Hacky way to get seed
+                    # Hacky way to get seed
                     seed = file.split('.txt')[0].split(c+'_')[1]
                     # ProbType param doesn't matter since p is passed in
                     mip, graph, _ = MIP(
-                        0, k, numEdges, numNodes, 2*numEdges//k, 
+                        0, k, numEdges, numNodes, 2*numEdges//k,
                         graph=graph, prob=prob, improvements=improvements)
 
-                    results[c, pType, k, count] = (mip.objVal, mip.RunTime, mip.MipGap, seed)
+                    results[c, pType, k, count] = (
+                        mip.objVal, mip.RunTime, mip.MipGap, seed)
 
-                    print((c, pType, k, count), ":", (mip.objVal, mip.RunTime, mip.mipGap))
+                    print((c, pType, k, count), ":",
+                          (mip.objVal, mip.RunTime, mip.mipGap))
                     print('Complete', c, pType, "searchers:", k)
                 problem = ''
                 for label in improvements:
                     if improvements[label]:
                         problem += label + "_"
                 with open(path+problem+'results.txt', 'w') as f:
-                     f.write(str(results))
+                    f.write(str(results))
     return results
 
 
@@ -135,17 +184,20 @@ if __name__ == '__main__':
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
-    runBenchmarks(classes, improvements=improvements)
-    
-    
-    #classes = ['M19N15']
+    # runBenchmarks(classes, improvements=improvements)
+
+    results = readResultFile(
+        './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
+
+    displayLatexFormat(results, classes, 2, 10)
+
     # generateProblems(classes, instances)
 #    with open('BranchPriorityResults.txt', 'r') as f:
 #        results = eval(f.read())
 #    print(results)
 #    displayResults(results, classes, 2, instances)
 #    displayLatexFormat(results, classes, 2, instances)
-    
+
 #    for c in classes:
 #        with open(c + 'results.txt', 'r') as f:
 #            temp = eval(f.read())
@@ -154,5 +206,3 @@ if __name__ == '__main__':
 #
 #    displayResults(results, classes, 2, instances)
 #    displayLatexFormat(results, classes, 2, instances)
-    
-    
