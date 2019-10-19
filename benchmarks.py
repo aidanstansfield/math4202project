@@ -91,18 +91,19 @@ def displayLatexFormat(results, classes, maxSearchers, instances, outputs=['objV
                     totals = [0, 0, 0]
                     for i in range(1, instances+1):
                         resultVal = results[c, pType, k, i][resultIndex]
+
                         if resultType == 'runTime':
-                            displayResult = int(round(resultVal, precision))
+                            displayResult = int(round(resultVal, 0))
                         else:
                             displayResult = round(resultVal, precision)
 
                         print('& ', displayResult,
                               sep='', end=' ')
-                        totals[resultIndex] += results[c,
-                                                       pType, k, i][resultIndex]
+                        totals[resultIndex] += displayResult#results[c,
+                                                       #pType, k, i][resultIndex]
                     if resultType == 'runTime':
                         displayAverage = int(
-                            round(totals[resultIndex]/instances, precision))
+                            round(totals[resultIndex]/instances, 0))
                     else:
                         displayAverage = round(
                             totals[resultIndex]/instances, precision)
@@ -184,10 +185,13 @@ if __name__ == '__main__':
     # runBenchmarks(classes, improvements=improvements)
 
     results = readResultFile(
-        './problemInstances/M24N18/Non-Uniform/dont_visit_searched_leaves_results.txt')
+        './problemInstances/M24N18/Non-Uniform/resultsBP.txt')
 
-    displayLatexFormat(results, ['M24N18'], 1, 10, ['runTime'])
+    displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
 
+    results = readResultFile(
+        './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
+    # displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
     # generateProblems(classes, instances)
 #    with open('BranchPriorityResults.txt', 'r') as f:
 #        results = eval(f.read())
