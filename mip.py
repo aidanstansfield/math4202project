@@ -1,10 +1,9 @@
 from gurobipy import quicksum, GRB, Model, max_, min_
 from problemGen import generateNetwork, genArcs, genNodes, genEdges, displayGraph, indexToXY, generateProbabilities, genLeaf
-from time import clock
 from matplotlib import pyplot, animation
-import msvcrt
 from math import inf
-import random
+import math
+import warnings
 
 UNIFORM = 0
 NON_UNIFORM = 1
@@ -24,44 +23,49 @@ def genNeighbours(edges):
 
 
 def visualiseStrategy(state, graph):
-    arcs = state["A"]
-    fig = pyplot.figure()
+    numEdges = len(state["E"])
+    numNodes = len(state["N"])
+    if numEdges<= (2*numNodes - math.ceil(2*math.sqrt(numNodes))):
+        fig = pyplot.figure()
+        
+        def init():
+            #Ignore matplotlib internal deprecation warning
+            warnings.filterwarnings("ignore")
+            for key in graph.keys():
+                keyCoords = indexToXY(key)
+                for node in graph[key]:
+                    nodeCoord = indexToXY(node)
+                    pyplot.plot(
+                        [keyCoords[0], nodeCoord[0]],
+                        [keyCoords[1], nodeCoord[1]],
+                        'b.-'
+                    )
+                pyplot.annotate(str(key), (keyCoords[0], keyCoords[1]))
     
-    def init():
-        for key in graph.keys():
-            keyCoords = indexToXY(key)
-            for node in graph[key]:
-                nodeCoord = indexToXY(node)
-                pyplot.plot(
-                    [keyCoords[0], nodeCoord[0]],
-                    [keyCoords[1], nodeCoord[1]],
-                    'b.-'
-                )
-            pyplot.annotate(str(key), (keyCoords[0], keyCoords[1]))
-
-    def animate(t):
-        pyplot.title('Sparse: t=' + str(t))
-        if t == 0:
-            return
-
-        for a in state["A"]:
-            if t > 1 and state["X"][t-1, a].x > 0.9:
-                XCoords = [indexToXY(a[0])[0], indexToXY(a[1])[0]]
-                YCoords = [indexToXY(a[0])[1], indexToXY(a[1])[1]]
-                pyplot.plot(XCoords, YCoords, 'g-')
-
-            if state["X"][t, a].x > 0.9:
-                XCoords = [indexToXY(a[0])[0], indexToXY(a[1])[0]]
-                YCoords = [indexToXY(a[0])[1], indexToXY(a[1])[1]]
-                pyplot.plot(XCoords, YCoords, 'r-',)
-#        if sum(i.x for i in state["X"].values()) == state[""]
-
-
-    # Must be assigned to a variable or the animation doesn't play
-    anim = animation.FuncAnimation(fig, animate, init_func=init,
-            frames=state["maxTime"], interval = 750)
-
-    pyplot.show()
+        def animate(t):
+            pyplot.title('Sparse: t=' + str(t))
+            if t == 0:
+                return
+    
+            for a in state["A"]:
+                if t > 1 and state["X"][t-1, a].x > 0.9:
+                    XCoords = [indexToXY(a[0])[0], indexToXY(a[1])[0]]
+                    YCoords = [indexToXY(a[0])[1], indexToXY(a[1])[1]]
+                    pyplot.plot(XCoords, YCoords, 'g-')
+    
+                if state["X"][t, a].x > 0.9:
+                    XCoords = [indexToXY(a[0])[0], indexToXY(a[1])[0]]
+                    YCoords = [indexToXY(a[0])[1], indexToXY(a[1])[1]]
+                    pyplot.plot(XCoords, YCoords, 'r-',)
+    
+        # Must be assigned to a variable or the animation doesn't play
+        anim = animation.FuncAnimation(fig, animate, init_func=init,
+                frames=state["maxTime"]+1, interval = 750)
+    
+        pyplot.show()
+    else:
+        print("Cannot visualise strategy for dense graphs. Graph will be displayed without strategy.")
+        displayGraph(graph)
 
 
 def genSuccessors(graph, Arcs):
@@ -76,9 +80,6 @@ def genSuccessors(graph, Arcs):
 
 def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p = None, seed=None):
 #    #sets
-    
-    if seed is None:
-        seed = random.seed
     if graph is None:
         graph, prob, Edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
     if prob is None:
@@ -154,7 +155,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     
 #    Y is a continuous variable indicating whether an edge has been searched at
     #time t or not- it will take maximal value of 1 when edge has been searched
-#    Y = {(t, e): mip.addVar() for t in T for e in Edges}
+#    Y = {(t, e): mip.addVar(ub=1) for t in T for e in Edges}
     
     """*******************BRANCH PRIORITIES********************************"""
     #YT[t] is the number of new edges we explore at time t- only defined for
@@ -212,8 +213,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     
     """---------------------MOD: MUST SEARCH LEAF ARC AT TIME 1 ------------"""
     # must use at least 1 leaf if uniform
-#    if probType == UNIFORM and len(leafArcs) != 0:
-#        mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
+    if probType == UNIFORM and len(leafArcs) != 0:
+        mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
     
     """*******************BRANCH PRIORITIES********************************"""
     #if non-uniform, we preferably want to start by searching edges with high
@@ -231,7 +232,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
     
     """........................SET METHOD = 2............................."""
     #Run barrier algorithm for mip root node
-    mip.setParam("Method",2)
+#    mip.setParam("Method",2)
     
     #set optimality gap to 0
     mip.setParam('MipGap', 0)
@@ -244,16 +245,16 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph = None, edges = None, p 
         "X": X,
         "Y": Y,
         "T": T,
-        "L": L,
-        "A": arcs,
-        "maxTime": maxTime
+        "E": Edges,
+        "L": leafArcs,
+        "A": Arcs,
+        "N": Nodes,
+        "maxTime": maxTime,
+        "seed": seed
     }
     visualiseStrategy(state, graph)
     
-    #computation time
-    time = mip.Runtime
-    
-    return mip, graph, time
+    return mip, graph, state
 
 
 # Floyd-Warshall algorithm
@@ -284,9 +285,10 @@ returns the shortest distance to that edge (will be one end of that edge)
 def distance(from_node, to_edge, distances):
     return min(distances[from_node][to_edge[i]] for i in range(2))
 
-seed = 2003701112
-MIP(probType=UNIFORM,K=1,numEdges=19, numNodes=15, maxTime=38, seed = seed)
-#if __name__ == "__main__":
+
+if __name__ == "__main__":
+    MIP(probType=UNIFORM,K=2,numEdges=19, numNodes=15, maxTime=11, seed=8951724032167401572)
+#    MIP(probType=UNIFORM,K=19,numEdges=30, numNodes=15, maxTime=50, seed=8951724032167401572)
 #    if True:
 #        # run mip
 #        seed = 2003701112
