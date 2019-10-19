@@ -4,7 +4,8 @@ Created on Thu Aug 22 16:08:57 2019
 @author: Daniel
 """
 from collections import defaultdict
-from random import randint, choice, seed, randrange
+from random import *
+import random
 from datetime import datetime
 import sys
 import os
@@ -31,7 +32,6 @@ def displayLattice(size=GRID_SIZE, graph=None):
             index = j + i*size
             left = (j-1) + i*size
             right = (j+1) + i*size
-            # print("index:", index, 'left', left, 'right', right)
             exists = index in graph.keys()  # Does the node exist
 
             if graph is not None and exists:
@@ -62,8 +62,8 @@ def displayLattice(size=GRID_SIZE, graph=None):
         print()
 
 
+#Display the given graph
 def displayGraph(graph):
-
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
     plot.figure(1, figsize=(10, 10), dpi=72)
@@ -76,7 +76,6 @@ def displayGraph(graph):
         nx.draw_networkx(dense, pos=pos)
     else:
         plot.title('Sparse')
-        # plot.axis([-1, 11, -1, 11])
 
         for key in graph.keys():
             keyCoords = indexToXY(key, GRID_SIZE)
@@ -128,6 +127,7 @@ def gridNeighbours(index, size=GRID_SIZE):
     return (up, right, down, left)
 
 
+# Convert the index of a node in a sparse graph to X and Y coordinates
 def indexToXY(index, size=GRID_SIZE):
 
     x = index % size
@@ -135,6 +135,7 @@ def indexToXY(index, size=GRID_SIZE):
     return (x, y)
 
 
+# Generate probabilities of distribution probType for the given graph
 def generateProbabilities(graph, probType):
     pUn = None  # uniform prob
     pNon = None  # non-uniform prob
@@ -182,6 +183,7 @@ def generateProbabilities(graph, probType):
     return prob, edges
 
 
+# Generate a dense graph with the given number of edges and nodes
 def generateDense(edges, nodes, graph):
     maxValid = (nodes)*(nodes-1)//2
     if edges > maxValid:
@@ -225,13 +227,12 @@ def adjustLeafNodes(graph, edgesNeeded):
             graph[neighbour].remove(leaf[i])
 
         return graph
-    # displayGraph(graph)
 
 
+#Generate a sparse network with the given number of edges and nodes
 def generateSparse(edges, nodes, graph):
     # Sparse network - like a manhattan network
     # randomly choose a starting point on the grid
-    print("GRID SIZE:", GRID_SIZE)
     start = randint(0, GRID_SIZE ** 2 - 1)
     # list of nodes we have visited (and thus will be added to the network)
     visited = [start]
@@ -274,7 +275,6 @@ def generateSparse(edges, nodes, graph):
 
             # Pick a neighbour from the possible ones calculated above
             edgeNode2 = choice(possibleNodes[edgeNode1])
-            print(possibleNodes, edgeNode1, edgeNode2)
             possibleNodes[edgeNode1].remove(edgeNode2)
             possibleNodes[edgeNode2].remove(edgeNode1)
             if len(possibleNodes[edgeNode1]) == 0:
@@ -288,14 +288,13 @@ def generateSparse(edges, nodes, graph):
 
     return graph, 0
 
+
 # Generate a network with the given number of edges and nodes
 # Params:
 #     edges - number of edges to use
 #     nodes- number of nodes to use
 #     probType - type of probability distribution to use uniform or non-uniform
 #     initSeed - optional seed to use when generating graphs
-
-
 def generateNetwork(edges, nodes, probType=None, initSeed=None):
     if initSeed is None:
         initSeed = randrange(sys.maxsize)
@@ -310,8 +309,6 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
     # The network / graph is rperesented with nodes as keys,
     # and the nodes they connect to as values (edges are pairs of nodes)
     graph = defaultdict(set)
-    # (a/b <= 2*(GRID_SIZE-1)/GRID_SIZE) or
-    print(a, 2*b - math.ceil(2*math.sqrt(b)))
     if a <= (2*b - math.ceil(2*math.sqrt(b))):
         graph, edgesToAdd = generateSparse(a, b, graph)
 
@@ -333,7 +330,6 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
             graph = bestGraph
 
     else:
-        print("dense")
         # Dense network
         graph = generateDense(a, b, graph)
         # use network x to check if it's connected
@@ -411,10 +407,11 @@ def readGraph(file):
     return graph, prob
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     #    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
-    sparseInstance, p1, _, _ = generateNetwork(19, 15, 1)
+#    sparseInstance, p1, _, _ = generateNetwork(24, 18, 1)
+
     # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
     # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
@@ -422,4 +419,4 @@ if __name__ == "__main__":
     # readGraph("M20N10_327504534.txt")
     # displayGraph(denseInstance)
     # displayLattice(graph=sparseInstance)
-    displayGraph(sparseInstance)
+#    displayGraph(sparseInstance)
