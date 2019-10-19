@@ -54,12 +54,21 @@ def displayResults(results, classes, maxSearchers, instances):
 
 
 # Display the generated results as a LaTeX table
-def displayLatexFormat(results, classes, maxSearchers, instances):
+def displayLatexFormat(results, classes, maxSearchers, instances, outputs=['objVal', 'runTime', 'mipGap']):
     # Number of decimal places to round to
     precision = 1
-
+    resultIndex = 0
     # Make a table for each return value (objective, runtime and mipgap)
-    for resultType in range(3):
+    for resultType in outputs:
+        if resultType == 'objVal':
+            resultIndex = 0
+        elif resultType == 'runTime':
+            resultIndex = 1
+        elif resultType == 'mipGap':
+            resultIndex == 2
+        else:
+            print('Given an invalid result output. Skippping', resultType)
+            continue
         for c in classes:
             print('\n\\begin{table}[H]')
             print('\\footnotesize')
@@ -81,39 +90,27 @@ def displayLatexFormat(results, classes, maxSearchers, instances):
 
                     totals = [0, 0, 0]
                     for i in range(1, instances+1):
-                        resultVal = results[c, pType, k, i][resultType]
-                        if resultType == 1:
+                        resultVal = results[c, pType, k, i][resultIndex]
+                        if resultType == 'runTime':
                             displayResult = int(round(resultVal, precision))
                         else:
                             displayResult = round(resultVal, precision)
 
                         print('& ', displayResult,
                               sep='', end=' ')
-                        totals[resultType] += results[c,
-                                                      pType, k, i][resultType]
-                    if resultType == 1:
+                        totals[resultIndex] += results[c,
+                                                       pType, k, i][resultIndex]
+                    if resultType == 'runTime':
                         displayAverage = int(
-                            round(totals[resultType]/instances, precision))
+                            round(totals[resultIndex]/instances, precision))
                     else:
                         displayAverage = round(
-                            totals[resultType]/instances, precision)
+                            totals[resultIndex]/instances, precision)
                     print(' & ', displayAverage,
                           '\\\\ \hline', sep='')
             print('\end{tabular}')
             print('\end{table}')
-        #     \begin{table}[H]
-        #     \footnotesize
-        #     Papers Results\\
-        #     \begin{tabular} {|c|c|c|c|c|c|c|c|c|c|c|c|}
-        #     \hline
-        #     Scenario & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & Average\\
-        #     \hline
-        #     $K1-\bar{\rho}$ & 12.5 & 12.6 & 12.2 & 12.7 & 12.3 & 12.5 & 12.5 & 12.9 & 12.6 & 12.4 & 12.5\\ \hline
-        #     $K1-\rho$ & 11.3 & 10.7 & 11.5 & 11.3 & 10.8 & 11.2 & 11.0 & 11.3 & 11.0 & 10.7 & 11.1\\ \hline
-        #     $K2-\bar{\rho}$ & 6.1 & 6.2 & 6.0 & 6.2 & 6.1 & 6.1 & 6.2 & 6.3 & 6.2 & 6.1 & 6.2\\ \hline
-        #     $K2-\rho$ & 5.3 & 5.2 & 5.5 & 5.5 & 5.3 & 5.4 & 5.3 & 5.5 & 5.4 & 5.3 & 5.4\\ \hline
-        #     \end{tabular}
-        # \end{table}
+        resultIndex += 1
 
 
 def readResultFile(filePath):
@@ -187,9 +184,9 @@ if __name__ == '__main__':
     # runBenchmarks(classes, improvements=improvements)
 
     results = readResultFile(
-        './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
+        './problemInstances/M24N18/Non-Uniform/dont_visit_searched_leaves_results.txt')
 
-    displayLatexFormat(results, classes, 2, 10)
+    displayLatexFormat(results, ['M24N18'], 1, 10, ['runTime'])
 
     # generateProblems(classes, instances)
 #    with open('BranchPriorityResults.txt', 'r') as f:
