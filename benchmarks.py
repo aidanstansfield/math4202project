@@ -124,60 +124,19 @@ if __name__ == '__main__':
     classes = ['M19N15', 'M24N18']
     improvements = {
         "tighter_T_bound": False,
-        "start_at_leaf_constraint": True,
+        "start_at_leaf_constraint": False,
         "start_at_leaf_BP": False,
         "dont_visit_searched_leaves": False,
         "travel_towards_unsearched": False,
         "branch_direction": False,
-        "barrier_log": False,
+        "barrier_log": True,
         "Y_cts": False,
         "early_X_BP": False,
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
     runBenchmarks(classes, improvements=improvements)
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "dont_visit_searched_leaves": True,
-        "travel_towards_unsearched": False,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": False,
-        "early_X_BP": False,
-        "Y_BP": False,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements=improvements)
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "dont_visit_searched_leaves": False,
-        "travel_towards_unsearched": True,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": False,
-        "early_X_BP": False,
-        "Y_BP": False,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements=improvements)
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "dont_visit_searched_leaves": False,
-        "travel_towards_unsearched": False,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": True,
-        "early_X_BP": False,
-        "Y_BP": False,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements=improvements)
+    
     
     #classes = ['M19N15']
     # generateProblems(classes, instances)
