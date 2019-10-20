@@ -1,5 +1,5 @@
 from problemGen import generateNetwork, writeGraph, readGraph
-# from mip import MIP
+from mip import MIP
 #from mipBP import *
 import re
 import os
@@ -168,68 +168,8 @@ if __name__ == '__main__':
     #    classes = ['M19N15', 'M24N18', 'M20N15', 'M20N8', 'M30N22', 'M30N12',
     #               'M30N9', 'M40N38', 'M40N16', 'M40N11', 'M50N35', 'M50N20',
     #               'M50N14']
-    """
+    
     classes = ['M24N18']
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": True,
-        "start_at_leaf_hint": False,
-        "dont_visit_searched_leaves": False,
-        "travel_towards_unsearched": False,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": False,
-        "early_X_BP": False,
-        "Y_BP": False,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "start_at_leaf_hint": True,
-        "dont_visit_searched_leaves": False,
-        "travel_towards_unsearched": False,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": False,
-        "early_X_BP": False,
-        "Y_BP": False,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "start_at_leaf_hint": False,
-        "dont_visit_searched_leaves": False,
-        "travel_towards_unsearched": False,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": False,
-        "early_X_BP": True,
-        "Y_BP": False,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "start_at_leaf_hint": False,
-        "dont_visit_searched_leaves": False,
-        "travel_towards_unsearched": False,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": False,
-        "early_X_BP": False,
-        "Y_BP": True,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
     improvements = {
         "tighter_T_bound": False,
         "start_at_leaf_constraint": False,
@@ -244,15 +184,14 @@ if __name__ == '__main__':
         "Y_BP": False,
         "high_prob_edges_BP": True
     }
-    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
+    #runBenchmarks(classes, improvements, maxSearchers=1, probType=['Non-Uniform'])
     
     #classes = ['M19N15']
     # runBenchmarks(classes, improvements=improvements)
-    """
-    results = readResultFile('./problemInstances/M24N18/Uniform/laptop_MIP_results.txt')
+    
+    #results = readResultFile('./problemInstances/M24N18/Uniform/laptop_MIP_results.txt')
 
-    displayLatexFormat(results, ['M24N18'], 1, 10, ['runTime'])
-
+    #displayLatexFormat(results, ['M24N18'], 1, 10, ['runTime'])
     #results = readResultFile(
     #    './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
     # displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
