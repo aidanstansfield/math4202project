@@ -1,6 +1,9 @@
 \documentclass{article}
 
 \usepackage{graphicx}
+\usepackage{mathtools}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+
 \graphicspath{ {./images/} }
 
 \begin{document}
@@ -49,23 +52,28 @@ Improvements were made to the problem generation so that it was easier to genera
 The tighter threshold was defined to help ensure valid graphs can be made. For example, on a 10 x 10 grid, the maximum number of nodes possible for a sparse graph is 100, and the maximum number of edges possible is 180. The ratio between these values is 1.8 which is less than 2, so a sparse graph is generated. However, if 181 edges are chosen with 100 nodes, the ratio is 1.81, also less then 2 so a sparse graph is chosen to be made. However, this is impossible because there are no more spaces to add an edges. This means a dense graph should be made because a sparse graph of the correct class cannot be generated.
  The threshold defined in the paper does not take this into account, and so ignores a range of graph classes. After creating the functionality for generating graphs, many classes were generated with different nodes to see if there was a pattern for when a closer threshold could be obtained. For a given number of nodes, the number of edges in a valid sparse graph, and valid dense graph were noted, and then formulae for these numbers in terms of nodes were created. The table is shown below.
 
-\begin{table}
-    % \footnotesize
-    Valid Edges for graphs of n nodes\\
-    \begin{tabular}{ |c|c|c| }
-    \hline
-    Nodes & Largest Valid Edges - Sparse  & Largest Valid Edges - Dense\\
-    \hline
-    0 & 0 & 0 \\ \hline
-    1 & 1 & 1 \\ \hline
-    2 & 2 & 3 \\ \hline
-    3 & 4 & 6 \\ \hline
-    4 & 5 & 10 \\ \hline
-    5 & 7 & 15\\ \hline
-    6 & 8 & 21 \\ \hline
-    \end{tabular}
+ \begin{center}
+    \begin{table}[h]
+        % \footnotesize
+        Valid Edges for graphs of n nodes\\
+        \begin{tabular}{ |c|c|c| }
+        \hline
+        Nodes & Largest Valid Edges - Sparse  & Largest Valid Edges - Dense\\
+        \hline
+        1 & 0 & 0 \\ \hline
+        2 & 1 & 1 \\ \hline
+        3 & 2 & 3 \\ \hline
+        4 & 4 & 6 \\ \hline
+        5 & 5 & 10 \\ \hline
+        6 & 7 & 15\\ \hline
+        7 & 8 & 21 \\ \hline
+        8 & 10 & 28 \\ \hline
+        9 & 12 & 36 \\ \hline
+        \end{tabular}
     \end{table}
+    \end{center}
 
+    This table outlines the largest number of edges that can be used to make a sparse and dense graph with the given number of nodes. Since there is no upper bound on the number of edges for dense graphs, it is clear that the maximum number of edges for a dense graph with $n$ nodes is $\binom{n}{2}$, corresponding to the complete graph $K_n$. The pattern for the sparse graph was less obvious. Due to the grid structure of the sparse networks, the number of new edges that can be added when a new node is added changes based on if the node will complete a square in the grid. It turns out that this sequence is the number of edges in a spiral of $n$ unit squares. The formula for the nth term in the sequence is $a(n) = 2n - \lceil 2\sqrt{n} \rceil$.This was found by searching the Online Encyclopedia of Integer Sequences (OEIS) REFERENCE HERE. This formula is important as it provides a tighter threshold condition for when to generate a sparse or dense graph. That is, if $a \geq 2b - \lceil 2\sqrt{b} \rceil$ where a is the number of edges and b is the number of nodes in the graph, then the graph is dense, otherwise it is sparse.
 \section{Results}
 \subsection{Result Visualisation}
 A tool was developed to help visualise the optimal search strategy for a given graph. Unvisited edges are indicated in blue, visited edges are indicated in green, and edges that are being visited in the current time slot t, are red.
