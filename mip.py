@@ -132,7 +132,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     # set of leaf arcs
     leafArcs = genLeaf(graph)
     
-    # dict containing all the arcs thet start at the ending node of each arc
+    # dict containing all the arcs that start at the ending node of each arc
     arcCon = genSuccessors(graph, Arcs)
     # define values for functions S, E and O and store in dict.
     for a in Arcs:
@@ -247,7 +247,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         if probType == UNIFORM and len(leafArcs) != 0:
             mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
     
-    if improvements['start_at_leaf_hint']:
+    if improvements['start_at_leaf_hint'] and probType == UNIFORM:
         for a in leafArcs:
             X[1, a].VarHintVal = 1
     

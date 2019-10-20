@@ -78,6 +78,7 @@ def displayLatexFormat(results, classes, maxSearchers, instances, outputs=['objV
             print('& Average\\\\')
             print('\hline')
             for k in range(1, maxSearchers+1):
+                #for pType in ['Uniform', 'Non-Uniform']:
                 for pType in ['Uniform']:
                     if pType == 'Uniform':
                         probDisplay = '\\bar{\\rho}'
@@ -161,8 +162,9 @@ def runBenchmarks(classes, improvements, maxSearchers=2, probType=['Uniform', 'N
 
 
 if __name__ == '__main__':
-
-    classes = ['M19N15']
+    #    classes = ['M19N15', 'M24N18']
+    
+    classes = ['M24N18']
     improvements = {
         "tighter_T_bound": False,
         "start_at_leaf_constraint": False,
