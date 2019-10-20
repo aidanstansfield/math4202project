@@ -1,5 +1,5 @@
 from problemGen import generateNetwork, writeGraph, readGraph
-# from mip import MIP
+from mip import MIP
 #from mipBP import *
 import re
 import os
@@ -168,7 +168,21 @@ if __name__ == '__main__':
     #               'M30N9', 'M40N38', 'M40N16', 'M40N11', 'M50N35', 'M50N20',
     #               'M50N14']
 
-    classes = ['M19N15', 'M24N18']
+    classes = ['M19N15']
+    improvements = {
+        "tighter_T_bound": False,
+        "start_at_leaf_constraint": False,
+        "start_at_leaf_BP": False,
+        "dont_visit_searched_leaves": False,
+        "travel_towards_unsearched": False,
+        "branch_direction": False,
+        "barrier_log": False,
+        "Y_cts": False,
+        "early_X_BP": False,
+        "Y_BP": False,
+        "high_prob_edges_BP": False
+    }
+    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
     improvements = {
         "tighter_T_bound": False,
         "start_at_leaf_constraint": False,
@@ -182,8 +196,8 @@ if __name__ == '__main__':
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
-    # runBenchmarks(classes, improvements=improvements)
-
+    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
+    """
     results = readResultFile(
         './problemInstances/M24N18/Non-Uniform/resultsBP.txt')
 
@@ -191,6 +205,7 @@ if __name__ == '__main__':
 
     results = readResultFile(
         './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
+    """
     # displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
     # generateProblems(classes, instances)
 #    with open('BranchPriorityResults.txt', 'r') as f:
