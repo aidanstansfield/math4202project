@@ -1,18 +1,15 @@
 from problemGen import generateNetwork, writeGraph, readGraph
 from mip import MIP
-#from mipBP import *
 import re
 import os
 import ast
 
-# Get the number of edges and nodes from a grraph class
-
-
+# Extract the number of edges and nodes from a graph class
 def parseClass(classType):
     return [int(x) for x in re.split(r'[MN]', classType)[1:]]
 
 
-# Generate the given number of poblems for each graph class
+# Generate the given number of problems for each graph class
 # Generated graphs are written to a file in ./problemInstances/class/probType/
 def generateProblems(classes, num):
     for c in classes:
@@ -81,7 +78,7 @@ def displayLatexFormat(results, classes, maxSearchers, instances, outputs=['objV
             print('& Average\\\\')
             print('\hline')
             for k in range(1, maxSearchers+1):
-                for pType in ['Uniform', 'Non-Uniform']:
+                for pType in ['Uniform']:
                     if pType == 'Uniform':
                         probDisplay = '\\bar{\\rho}'
                     else:
@@ -164,9 +161,6 @@ def runBenchmarks(classes, improvements, maxSearchers=2, probType=['Uniform', 'N
 
 
 if __name__ == '__main__':
-    #    classes = ['M19N15', 'M24N18', 'M20N15', 'M20N8', 'M30N22', 'M30N12',
-    #               'M30N9', 'M40N38', 'M40N16', 'M40N11', 'M50N35', 'M50N20',
-    #               'M50N14']
 
     classes = ['M19N15']
     improvements = {
@@ -183,35 +177,16 @@ if __name__ == '__main__':
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
-    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
-    improvements = {
-        "tighter_T_bound": False,
-        "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "start_at_leaf_hint": False,
-        "dont_visit_searched_leaves": False,
-        "travel_towards_unsearched": False,
-        "branch_direction": False,
-        "barrier_log": False,
-        "Y_cts": False,
-        "early_X_BP": False,
-        "Y_BP": False,
-        "high_prob_edges_BP": False
-    }
-    runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
-    # displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
-    # generateProblems(classes, instances)
-#    with open('BranchPriorityResults.txt', 'r') as f:
-#        results = eval(f.read())
-#    print(results)
-#    displayResults(results, classes, 2, instances)
-#    displayLatexFormat(results, classes, 2, instances)
+    # runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
 
-#    for c in classes:
-#        with open(c + 'results.txt', 'r') as f:
-#            temp = eval(f.read())
-#            for key in temp:
-#                results[key] = temp[key]
-#
-#    displayResults(results, classes, 2, instances)
-#    displayLatexFormat(results, classes, 2, instances)
+
+    # results = readResultFile('./problemInstances/M24N18/Uniform/laptop_barrier_log_results.txt')
+    # displayLatexFormat(results, ['M24N18'], 1, 10, ['objVal', 'runTime'])
+
+    results = readResultFile('./problemInstances/M24N18/Uniform/high_prob_edges_BP_results.txt')
+    displayLatexFormat(results, ['M24N18'], 1, 10, ['objVal', 'runTime'])
+
+
+    # classes = ['M19N15', 'M24N18']
+    # instances  = 10
+    # generateProblems(classes, instances)
