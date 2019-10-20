@@ -173,6 +173,7 @@ if __name__ == '__main__':
         "tighter_T_bound": False,
         "start_at_leaf_constraint": False,
         "start_at_leaf_BP": False,
+        "start_at_leaf_hint": False,
         "dont_visit_searched_leaves": False,
         "travel_towards_unsearched": False,
         "branch_direction": False,
@@ -187,25 +188,17 @@ if __name__ == '__main__':
         "tighter_T_bound": False,
         "start_at_leaf_constraint": False,
         "start_at_leaf_BP": False,
+        "start_at_leaf_hint": False,
         "dont_visit_searched_leaves": False,
         "travel_towards_unsearched": False,
         "branch_direction": False,
-        "barrier_log": True,
+        "barrier_log": False,
         "Y_cts": False,
         "early_X_BP": False,
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
     runBenchmarks(classes, improvements, maxSearchers=1, probType=['Uniform'])
-    """
-    results = readResultFile(
-        './problemInstances/M24N18/Non-Uniform/resultsBP.txt')
-
-    displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
-
-    results = readResultFile(
-        './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
-    """
     # displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
     # generateProblems(classes, instances)
 #    with open('BranchPriorityResults.txt', 'r') as f:

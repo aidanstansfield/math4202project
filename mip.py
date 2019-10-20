@@ -114,7 +114,6 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     if Edges is None:
         Edges = genEdges(graph)
         
-    
     if improvements['tighter_T_bound']:
         # do needful
         T = range(maxTime + 1)
@@ -248,6 +247,10 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         if probType == UNIFORM and len(leafArcs) != 0:
             mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
     
+    if improvements['start_at_leaf_hint']:
+        for a in leafArcs:
+            X[1, a].VarHintVal = 1
+    
     if improvements['high_prob_edges_BP']:
         #if non-uniform, we preferably want to start by searching edges with high
         #probs first- branch on this
@@ -299,8 +302,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     #Parameter Adjustments
     
     #Set the maximum time to 900 seconds
-    #mip.setParam('TimeLimit', 900.0)
-    mip.setParam('LogFile', "")
+    mip.setParam('TimeLimit', 900.0)
     if improvements['barrier_log']:
         # Run barrier algorithm for mip root node
         mip.setParam("Method", 2)
@@ -355,13 +357,17 @@ def distance(from_node, to_edge, distances):
 
 if __name__ == "__main__":
     # run mip
-    seed = 748345644471475368
+    numEdges = 19
+    numNodes = 15
+    seed = 6726931912431499781
     K = 1
+    maxTime = 2*numEdges//K
     improvements = {
         "tighter_T_bound": False,
         "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": False,
-        "dont_visit_searched_leaves": True,
+        "start_at_leaf_BP": True,
+        "start_at_leaf_hint": False,
+        "dont_visit_searched_leaves": False,
         "travel_towards_unsearched": False,
         "branch_direction": False,
         "barrier_log": False,
@@ -370,7 +376,7 @@ if __name__ == "__main__":
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
-    MIP(probType=UNIFORM,K=1,numEdges=19, numNodes=15, maxTime=38, 
+    MIP(probType=UNIFORM,K=K,numEdges=numEdges, numNodes=numNodes, maxTime=maxTime, 
         seed=seed, improvements=improvements)
 # SLow:
 # 4772197386045408510
