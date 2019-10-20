@@ -81,7 +81,8 @@ def displayLatexFormat(results, classes, maxSearchers, instances, outputs=['objV
             print('& Average\\\\')
             print('\hline')
             for k in range(1, maxSearchers+1):
-                for pType in ['Uniform', 'Non-Uniform']:
+                #for pType in ['Uniform', 'Non-Uniform']:
+                for pType in ['Uniform']:
                     if pType == 'Uniform':
                         probDisplay = '\\bar{\\rho}'
                     else:
@@ -167,7 +168,7 @@ if __name__ == '__main__':
     #    classes = ['M19N15', 'M24N18', 'M20N15', 'M20N8', 'M30N22', 'M30N12',
     #               'M30N9', 'M40N38', 'M40N16', 'M40N11', 'M50N35', 'M50N20',
     #               'M50N14']
-
+    """
     classes = ['M24N18']
     improvements = {
         "tighter_T_bound": False,
@@ -247,14 +248,13 @@ if __name__ == '__main__':
     
     #classes = ['M19N15']
     # runBenchmarks(classes, improvements=improvements)
+    """
+    results = readResultFile('./problemInstances/M24N18/Uniform/laptop_MIP_results.txt')
 
-    results = readResultFile(
-        './problemInstances/M24N18/Non-Uniform/resultsBP.txt')
+    displayLatexFormat(results, ['M24N18'], 1, 10, ['runTime'])
 
-    displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
-
-    results = readResultFile(
-        './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
+    #results = readResultFile(
+    #    './problemInstances/M24N18/Non-Uniform/originalMIP_results.txt')
     # displayLatexFormat(results, ['M24N18', 'M19N15'], 1, 10, ['objVal'])
     # generateProblems(classes, instances)
 #    with open('BranchPriorityResults.txt', 'r') as f:
