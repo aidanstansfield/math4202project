@@ -62,7 +62,7 @@ def displayLattice(size=GRID_SIZE, graph=None):
         print()
 
 
-#Display the given graph
+# Display the given graph
 def displayGraph(graph):
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
@@ -229,7 +229,7 @@ def adjustLeafNodes(graph, edgesNeeded):
         return graph
 
 
-#Generate a sparse network with the given number of edges and nodes
+# Generate a sparse network with the given number of edges and nodes
 def generateSparse(edges, nodes, graph):
     # Sparse network - like a manhattan network
     # randomly choose a starting point on the grid
@@ -407,16 +407,31 @@ def readGraph(file):
     return graph, prob
 
 
-#if __name__ == "__main__":
-    #    sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
+if __name__ == "__main__":
+
+    graph, _ = readGraph(
+        './problemInstances/M24N18/Uniform/M24N18_201951158.txt')
+    displayGraph(graph)
+    graph, _ = readGraph(
+        './problemInstances/M24N18/Uniform/M24N18_356583817.txt')
+    displayGraph(graph)
+
+    graph, _ = readGraph(
+        './problemInstances/M24N18/Uniform/M24N18_801439486.txt')
+    displayGraph(graph)
+
+    graph, _ = readGraph(
+        './problemInstances/M24N18/Uniform/M24N18_1949754548.txt')
+    displayGraph(graph)
+#        sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
 
 #    sparseInstance, p1, _, _ = generateNetwork(24, 18, 1)
 
-    # sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
+#     sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
 
-    # denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
+#     denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
 
-    # readGraph("M20N10_327504534.txt")
-    # displayGraph(denseInstance)
-    # displayLattice(graph=sparseInstance)
+#     readGraph("M20N10_327504534.txt")
+#     displayGraph(denseInstance)
+#     displayLattice(graph=sparseInstance)
 #    displayGraph(sparseInstance)
