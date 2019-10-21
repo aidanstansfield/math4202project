@@ -1,14 +1,11 @@
-from gurobipy import quicksum, GRB, Model, max_, min_
-from problemGen import generateNetwork, genArcs, genNodes, genEdges, displayGraph, indexToXY, generateProbabilities, genLeaf
-from time import clock
+from gurobipy import quicksum, GRB, Model, min_
+from problemGen import *
 from matplotlib import pyplot, animation
-import msvcrt
 from math import inf
 import random
 
 UNIFORM = 0
 NON_UNIFORM = 1
-
 
 def genNeighbours(edges):
     M = range(len(edges))
@@ -24,7 +21,7 @@ def genNeighbours(edges):
 
 
 def visualiseStrategy(state, graph):
-    arcs = state["A"]
+    """ Helper function to visualise the final search strategy """
     fig = pyplot.figure()
     
     def init():
@@ -54,8 +51,6 @@ def visualiseStrategy(state, graph):
                 XCoords = [indexToXY(a[0])[0], indexToXY(a[1])[0]]
                 YCoords = [indexToXY(a[0])[1], indexToXY(a[1])[1]]
                 pyplot.plot(XCoords, YCoords, 'r-',)
-#        if sum(i.x for i in state["X"].values()) == state[""]
-
 
     # Must be assigned to a variable or the animation doesn't play
     anim = animation.FuncAnimation(fig, animate, init_func=init,
@@ -64,6 +59,7 @@ def visualiseStrategy(state, graph):
     pyplot.show()
 
 def genSuccessors(graph, Arcs):
+    """ Generate a map of arcs to successor arcs """
     successors = {}
     for a in Arcs:
         suclist = []
@@ -74,6 +70,7 @@ def genSuccessors(graph, Arcs):
     return successors
 
 def getMaxEdges(Edges, prob):
+    """ Get edges that have the highest probability """
     maxProb = max(prob.values())
     maxEdges = []
     for e in Edges:
@@ -81,8 +78,8 @@ def getMaxEdges(Edges, prob):
             maxEdges.append(e)
     return maxEdges
 
-# returns the edge containing the arc a
 def getEdge(a, Edges, O):
+    """ returns the edge containing the arc a """
     for e in Edges:
         if O[a, e]:
             return e
@@ -91,12 +88,11 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         prob=None, seed=None, improvements=None):
     if improvements == None:
         improvements = {
-            "tighter_T_bound": False,
             "start_at_leaf_constraint": False,
             "start_at_leaf_BP": False,
+            "start_at_leaf_hint": False,
             "dont_visit_searched_leaves": False,
             "travel_towards_unsearched": False,
-            "branch_direction": False,
             "barrier_log": False,
             "Y_cts": False,
             "early_X_BP": False,
@@ -113,16 +109,6 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         prob, Edges = generateProbabilities(graph, probType)
     if Edges is None:
         Edges = genEdges(graph)
-        
-    if improvements['tighter_T_bound']:
-        # do needful
-        T = range(maxTime + 1)
-    else:
-        T = range(maxTime + 1)
-    
-    S = {}
-    E = {}
-    O = {}
     
     # gen set of arcs
     Arcs = genArcs(graph)
@@ -134,6 +120,12 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     
     # dict containing all the arcs that start at the ending node of each arc
     arcCon = genSuccessors(graph, Arcs)
+    
+    T = range(maxTime + 1)
+    S = {} # whether arc a begins at node n
+    E = {} # whether arc a ends at node n
+    O = {} # whether arc a is on edge e
+    
     # define values for functions S, E and O and store in dict.
     for a in Arcs:
         for e in Edges:
@@ -185,6 +177,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     # constraints
     
     if improvements['Y_cts']:
+        """ This improvement simplifies the MIP by removing the alpha variables
+        and allowing the Y variables to be continuous """
         # Y is a continuous variable indicating whether an edge has been searched at
         # time t or not- it will take maximal value of 1 when edge has been searched
         Y = {(t, e): mip.addVar(ub=1) for t in T for e in Edges}
@@ -196,7 +190,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         # Y[t, e] = 1 if we have searched edge e by time t, 0 otherwise
         Y = {(t, e): mip.addVar(vtype = GRB.BINARY) for t in T for e in Edges}
         
-        #alpha[t] is the probability that the target won't be found by maxTime
+        #alpha[t] is the probability that the target is not found by time t
         alpha = {t: mip.addVar() for t in T}
         
         # objective
@@ -243,11 +237,12 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     everyEdgeSearched = {e: mip.addConstr(Y[maxTime, e] == 1) for e in Edges}
     
     if improvements['start_at_leaf_constraint']:
-        # must use at least 1 leaf if uniform
+        # must have at least 1 searcher beginning at a leaf
         if probType == UNIFORM and len(leafArcs) != 0:
             mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
     
     if improvements['start_at_leaf_hint'] and probType == UNIFORM:
+        # hint to gurobi to start searchers at leaf nodes
         for a in leafArcs:
             X[1, a].VarHintVal = 1
     
@@ -293,16 +288,15 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
             mip.addConstr(numEdgesUnsearched[t] == quicksum(1 - Y[t, e] for e in Edges))
             mip.addConstr(someEdgesUnsearched[t] == min_(1, numEdgesUnsearched[t]))
         
-        
         moveTowardsUnsearched = {(t, a): mip.addConstr(X[t, a] <= 
                                 quicksum(1 - Y[t - 1, e] for e in closer[a]) +
                                 1 - someEdgesUnsearched[t - 1])
                                 for t in T[2:] for a in Arcs}
     
     #Parameter Adjustments
-    
     #Set the maximum time to 900 seconds
     mip.setParam('TimeLimit', 900.0)
+    
     if improvements['barrier_log']:
         # Run barrier algorithm for mip root node
         mip.setParam("Method", 2)
@@ -310,8 +304,8 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     #set optimality gap to 0
     mip.setParam('MipGap', 0)
     mip.optimize()
-    #Display Search Path
     
+    #Display Search Path
     state = {
         "X": X,
         "Y": Y,
@@ -319,6 +313,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         "A": Arcs,
         "maxTime": maxTime
     }
+    # if you want to visualise the strategy, uncomment the below line
     #visualiseStrategy(state, graph)
     
     #computation time
@@ -346,39 +341,55 @@ def shortest_paths(graph):
                     dist[i][j] = dist[i][k] + dist[k][j]
     return dist
 
-"""
-from_node - starting node (note it is the actual node, not an index in L)
-to_edge - the edge that we want to know the distance to
-distances - a list of distances from every node to every node
-returns the shortest distance to that edge (will be one end of that edge)
-"""
 def distance(from_node, to_edge, distances):
+    """
+    from_node - starting node
+    to_edge - the edge that we want to know the distance to
+    distances - a list of distances from every node to every node
+    returns the shortest distance to that edge (will be one end of that edge)
+    """
     return min(distances[from_node][to_edge[i]] for i in range(2))
 
 if __name__ == "__main__":
-    # run mip
+    """ You can run our problem in various ways. If you would like to generate
+    your own graph, you can set the below parameters accordingly"""
+    # The bare minimum you need to run the base MIP is as follows
     numEdges = 19
     numNodes = 15
-    seed = 6726931912431499781
-    K = 1
-    maxTime = 2*numEdges//K
+    K = 1 # how many searchers
+    probType = UNIFORM # alternatively, NON_UNIFORM
+    maxTime = 2 * numEdges//K # upper bound on time
+    
+    # now run the MIP
+    MIP(probType, K, numEdges, numNodes, maxTime)
+    
+    # if you know a particular seed you want to try, you can pass it in as follows
+    seed = 123456789 # a None seed will generate a random seed for you
+    MIP(probType, K, numEdges, numNodes, maxTime, seed=seed)
+    
+    # if you would like to toggle one or multiple of our improvements, simply
+    # edit the below dictionary and run the MIP with it
+    # NOTE: Some of these improvements did not make it into the paper, as they
+    # did not offer much improvement (or made it worse) and we were page limited
     improvements = {
-        "tighter_T_bound": False,
         "start_at_leaf_constraint": False,
-        "start_at_leaf_BP": True,
+        "start_at_leaf_BP": False,
         "start_at_leaf_hint": False,
         "dont_visit_searched_leaves": False,
         "travel_towards_unsearched": False,
-        "branch_direction": False,
         "barrier_log": False,
         "Y_cts": False,
         "early_X_BP": False,
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
-    MIP(probType=UNIFORM,K=K,numEdges=numEdges, numNodes=numNodes, maxTime=maxTime, 
-        seed=seed, improvements=improvements)
-# SLow:
-# 4772197386045408510
-# 6726931912431499781
-# 2600597230088613908
+    MIP(probType,K,numEdges, numNodes, maxTime, improvements=improvements)
+    
+    # If you would like to read in one of the graphs we used, you can do such
+    # (edit the path as necessary)
+    graph, _ = readGraph('./problemInstances/M19N15/Non-Uniform/M19N15_296644637.txt')
+    MIP(probType, K, numEdges, numNodes, maxTime, graph=graph)
+    
+    # if you would like to use the probabilities we used for that graph
+    graph, prob = readGraph('./problemInstances/M19N15/Non-Uniform/M19N15_296644637.txt')
+    MIP(probType, K, numEdges, numNodes, maxTime, graph=graph, prob=prob)
