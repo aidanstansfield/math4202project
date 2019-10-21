@@ -5,8 +5,6 @@ Created on Thu Aug 22 16:08:57 2019
 """
 from collections import defaultdict
 from random import *
-import random
-from datetime import datetime
 import sys
 import os
 import ast
@@ -23,8 +21,6 @@ GRID_SIZE = 10
 # Can also pass a graph to display on the lattice
 # This is to be used for displaying sparse graphs in the nice grid format like
 # in the paper
-
-
 def displayLattice(size=GRID_SIZE, graph=None):
     for i in range(size):  # Rows
         for j in range(size):  # Columns
@@ -67,7 +63,7 @@ def displayGraph(graph):
     numEdges = getNumEdges(graph)
     numNodes = getNumNodes(graph)
     plot.figure(1, figsize=(10, 10), dpi=72)
-
+    plot.rcParams.update({'font.size': 22})
     if numEdges > (2*numNodes - math.ceil(2*math.sqrt(numNodes))):
         plot.title('Dense')
         plot.axis()
@@ -97,10 +93,6 @@ def genLeaf(graph):
         if len(graph[n]) == 1:
             if (n, graph[n]) not in leaf and (graph[n], n) not in leaf:
                 leaf.append((n, list(graph[n])[0]))
-#    neigh = genNeighbours(edges)
-#    for m in neigh:
-#        if len(neigh[m]) == 1:
-#            leaf.append(m)
     return leaf
 
 
@@ -349,6 +341,7 @@ def generateNetwork(edges, nodes, probType=None, initSeed=None):
 
 
 def genEdges(graph):
+    """ generate a list of edges of the graph """
     edges = []
     e = 0
     for i in graph.keys():
@@ -360,6 +353,7 @@ def genEdges(graph):
 
 
 def genArcs(graph):
+    """ generate a list of arcs of the graph """
     arcs = []
     for i in graph:
         for j in graph[i]:
@@ -368,8 +362,8 @@ def genArcs(graph):
                 arcs.append((j, i))
     return arcs
 
-
 def genNodes(graph):
+    """ generate a list of nodes of the graph """
     return [n for n in graph.keys() if len(graph[n]) > 0]
 
 
@@ -379,7 +373,6 @@ def getNumEdges(graph):
 
 def getNumNodes(graph):
     return len(graph.keys())
-
 
 # Write a graph to a file
 def writeGraph(graph, seed, prob, path='./'):
@@ -392,7 +385,7 @@ def writeGraph(graph, seed, prob, path='./'):
         f.write(str(dict(graph)) + '\n' + str(prob))
     return path+fileName
 
-
+# read in graph and probability distribution from file
 def readGraph(file):
     graph = defaultdict(set)
     prob = {}
@@ -405,33 +398,3 @@ def readGraph(file):
     except ValueError as ve:
         print("An error occured reading the file", ve)
     return graph, prob
-
-
-if __name__ == "__main__":
-
-    graph, _ = readGraph(
-        './problemInstances/M24N18/Uniform/M24N18_201951158.txt')
-    displayGraph(graph)
-    graph, _ = readGraph(
-        './problemInstances/M24N18/Uniform/M24N18_356583817.txt')
-    displayGraph(graph)
-
-    graph, _ = readGraph(
-        './problemInstances/M24N18/Uniform/M24N18_801439486.txt')
-    displayGraph(graph)
-
-    graph, _ = readGraph(
-        './problemInstances/M24N18/Uniform/M24N18_1949754548.txt')
-    displayGraph(graph)
-#        sparseInstance, p1, _, _ = generateNetwork(45, 30, 0)
-
-#    sparseInstance, p1, _, _ = generateNetwork(24, 18, 1)
-
-#     sparseInstance, p1, _, _ = generateNetwork(19, 15, 0, 2086539324)
-
-#     denseInstance, p2, _, denseSeed = generateNetwork(300, 150, 0)
-
-#     readGraph("M20N10_327504534.txt")
-#     displayGraph(denseInstance)
-#     displayLattice(graph=sparseInstance)
-#    displayGraph(sparseInstance)

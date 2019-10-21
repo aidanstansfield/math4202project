@@ -101,7 +101,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         }
     # sets
     if seed is None:
-        seed = random.seed
+        seed = random.seed()
     if graph is None:
         graph, prob, Edges, _ = generateNetwork(numEdges, numNodes, probType, 
                                                 seed)
@@ -383,13 +383,15 @@ if __name__ == "__main__":
         "Y_BP": False,
         "high_prob_edges_BP": False
     }
-    MIP(probType,K,numEdges, numNodes, maxTime, improvements=improvements)
+    MIP(probType, K, numEdges, numNodes, maxTime,improvements=improvements)
     
     # If you would like to read in one of the graphs we used, you can do such
     # (edit the path as necessary)
+    # NOTE: numEdges and numNodes are ignored since we are providing a graph
     graph, _ = readGraph('./problemInstances/M19N15/Non-Uniform/M19N15_296644637.txt')
     MIP(probType, K, numEdges, numNodes, maxTime, graph=graph)
     
     # if you would like to use the probabilities we used for that graph
+    # NOTE: probType is ignored since we are providing the probability distribution
     graph, prob = readGraph('./problemInstances/M19N15/Non-Uniform/M19N15_296644637.txt')
     MIP(probType, K, numEdges, numNodes, maxTime, graph=graph, prob=prob)
