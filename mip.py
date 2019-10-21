@@ -67,7 +67,6 @@ def visualiseStrategy(state, graph):
         print("Cannot visualise strategy for dense graphs. Graph will be displayed without strategy.")
         displayGraph(graph)
 
-
 def genSuccessors(graph, Arcs):
     successors = {}
     for a in Arcs:
@@ -117,7 +116,6 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     if Edges is None:
         Edges = genEdges(graph)
         
-    
     if improvements['tighter_T_bound']:
         # do needful
         T = range(maxTime + 1)
@@ -136,7 +134,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     # set of leaf arcs
     leafArcs = genLeaf(graph)
     
-    # dict containing all the arcs thet start at the ending node of each arc
+    # dict containing all the arcs that start at the ending node of each arc
     arcCon = genSuccessors(graph, Arcs)
     # define values for functions S, E and O and store in dict.
     for a in Arcs:
@@ -251,6 +249,10 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
         if probType == UNIFORM and len(leafArcs) != 0:
             mip.addConstr(quicksum(X[1, l] for l in leafArcs) >= 1)
     
+    if improvements['start_at_leaf_hint'] and probType == UNIFORM:
+        for a in leafArcs:
+            X[1, a].VarHintVal = 1
+    
     if improvements['high_prob_edges_BP']:
         #if non-uniform, we preferably want to start by searching edges with high
         #probs first- branch on this
@@ -264,7 +266,7 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     if improvements['dont_visit_searched_leaves']:
         # don't search a leaf edge if it has already been searched
         leafConstraints = {(t, a): mip.addConstr(X[t, a] <= 1 - 
-                           quicksum(Y[t - 1 , e] for e in Edges if O[a, e]))
+                           quicksum(O[a, e]*Y[t - 1 , e] for e in Edges))
                             for t in T[1:] for a in Arcs if a[::-1] in leafArcs}
     
     if improvements['travel_towards_unsearched']:
@@ -303,7 +305,6 @@ def MIP(probType, K, numEdges, numNodes, maxTime, graph=None, Edges=None,
     
     #Set the maximum time to 900 seconds
     mip.setParam('TimeLimit', 900.0)
-    
     if improvements['barrier_log']:
         # Run barrier algorithm for mip root node
         mip.setParam("Method", 2)
@@ -358,152 +359,28 @@ def distance(from_node, to_edge, distances):
     return min(distances[from_node][to_edge[i]] for i in range(2))
 
 if __name__ == "__main__":
-    if True:
-        # run mip
-        seed = 748345644471475368
-        K = 1
-        improvements = {
-            "tighter_T_bound": False,
-            "start_at_leaf_constraint": False,
-            "start_at_leaf_BP": False,
-            "dont_visit_searched_leaves": False,
-            "travel_towards_unsearched": False,
-            "branch_direction": False,
-            "barrier_log": False,
-            "Y_cts": False,
-            "early_X_BP": False,
-            "Y_BP": False,
-            "high_prob_edges_BP": False
-        }
-        MIP(probType=UNIFORM,K=1,numEdges=19, numNodes=15, maxTime=38, 
-            seed=seed, improvements=improvements)
-    else:
-        numEdges = 19
-        numNodes = 15
-        seed = 748345644471475368
-        #seed = 5628902086360812845
-        K = 1
-        maxTime = 2 * numEdges
-        probType = 0
-        M = range(0, numEdges)
-        N = range(0, numNodes)
-        L = range(0, 2 * numEdges)
-        T = range(0, maxTime + 1)
-        #data
-        #gen network - p is pdf and edges is set of edges
-        graph, p, edges, _ = generateNetwork(numEdges, numNodes, probType, seed)
-        S = {}
-        E = {}
-        O = {}
-        # gen set of arcs
-        arcs = genArcs(graph)
-        # gen set of nodes
-        nodes = genNodes(graph)
-        leafs = genLeaf(graph)
-        leafIndices = [arcs.index(leaf) for leaf in leafs]
-        for l in L:
-            for m in M:
-                if arcs[l] == edges[m] or arcs[l] == edges[m][::-1]:
-                    O[l, m] = 1
-                else:
-                    O[l, m] = 0
-            for n in N:
-                if arcs[l][0] == nodes[n]:
-                    S[l, n] = 1
-                    E[l, n] = 0
-                elif arcs[l][1] == nodes[n]:
-                    E[l, n] = 1
-                    S[l, n] = 0
-                else:
-                    S[l, n] = 0
-                    E[l, n] = 0
-        
-        mip = Model("Model searchers searching for a randomly distributed immobile" \
-                    "target on a unit network")
-        # variables
-        X = {(t, l): mip.addVar(vtype=GRB.BINARY) for t in T[1:] for l in L}
-        Y = {(t, m): mip.addVar(vtype=GRB.BINARY) for t in T for m in M}
-        alpha = {t: mip.addVar() for t in T}
-        
-        # objective
-        mip.setObjective(quicksum((alpha[t-1]+alpha[t])/2 for t in T[1:]), GRB.MINIMIZE)
-        
-        # constraints
-        # num arcs searched can't exceed num searchers- implicitly defines capacity
-        searcherLim = {t: mip.addConstr(quicksum(X[t, l] for l in L) <= K) for t in T[1:]}
-
-        # define alpha as in paper
-        defAlpha = {t: mip.addConstr(alpha[t] == 1 - quicksum(p[edges[m]] * Y[t, m] for m in 
-                    M)) for t in T}
-        # update search info after every time step
-        updateSearch = {(t, m): mip.addConstr(Y[t, m] <= Y[t - 1, m] + 
-                        quicksum(O[l, m] * X[t, l] for l in L)) for t in 
-                        T[1:] for m in M}
-        # conserve arc flow on nodes
-        consFlow = {(t, n): mip.addConstr(quicksum(E[l, n] * X[t, l] for l in L) == 
-                              quicksum(S[l, n]* X[t + 1, l] for l in L)) for t in 
-                                T[1: -1] for n in N}
-        # initially, no edges have been searched
-        initY = {m: mip.addConstr(Y[0, m] == 0) for m in M}
-        # limit y so that every edge is searched by T
-        mustFindTarget = {m: mip.addConstr(Y[maxTime, m] == 1) for m in M}
-        
-        # must use at least 1 leaf if uniform
-#        if probType == UNIFORM and len(leafs) != 0:
-#            startAtLeaf = mip.addConstr(quicksum(X[1, l] for l in leafIndices) >= 1)
-        """ NEEDS BENCHMARK
-        # add a constraint that only permits
-        # from what i've tested, when adding to the original MIP, it can speed things up
-        # however, when used with the other leaf node constraint (which speeds things up a lot),
-        # it seems to perform worse than just using the other leaf node constraint
-                
-        leafConstraints = {(t, l): mip.addConstr(X[t, l] <= 1 - 
-                           quicksum(Y[t - 1 , m] for m in M if O[l, m]))
-                            for t in T[1:] for l in L if arcs[l][::-1] in leafs}
-        """
-        """ NEEDS BENCHMARK
-        # add a constraint that only permits an arc to be searched if it either
-        # a) puts us closer to an unsearched edge
-        # b) all edges have already been searched
-        
-        distances = shortest_paths(graph)
-        closer = {}
-        further = {}
-        for l in L:
-            closer[l] = []
-            further[l] = []
-            for m in M:
-                if distance(arcs[l][1], edges[m], distances) < distance(arcs[l][0], edges[m], distances):
-                    closer[l].append(m)
-                elif arcs[l] == edges[m] or arcs[l] == edges[m][::-1]:
-                    closer[l].append(m)
-                else:
-                    further[l].append(m)
-        
-        numEdgesUnsearched = {t: mip.addVar(vtype=GRB.INTEGER) for t in T[1:]}
-        someEdgesUnsearched = {t: mip.addVar(vtype=GRB.BINARY) for t in T[1:]}
-        
-        for t in T[1:]:
-            mip.addConstr(numEdgesUnsearched[t] == quicksum(1-Y[t, m] for m in M))
-            mip.addConstr(someEdgesUnsearched[t] == min_(1, numEdgesUnsearched[t]))
-        
-        
-        moveTowardsUnsearched = {(t, l): mip.addConstr(X[t, l] <= 
-                                quicksum(1 - Y[t - 1, m] for m in closer[l]) +
-                                1 - someEdgesUnsearched[t - 1])
-                                for t in T[2:] for l in L}
-        """
-        mip.setParam('TimeLimit', 1000.0)
-        #mip.setParam("Method",2)
-        mip.optimize()
-        state = {
-            "X": X,
-            "Y": Y,
-            "T": T,
-            "L": L,
-            "maxTime": maxTime
-        }
-        visualiseStrategy(state, arcs, graph)
+    # run mip
+    numEdges = 19
+    numNodes = 15
+    seed = 6726931912431499781
+    K = 1
+    maxTime = 2*numEdges//K
+    improvements = {
+        "tighter_T_bound": False,
+        "start_at_leaf_constraint": False,
+        "start_at_leaf_BP": True,
+        "start_at_leaf_hint": False,
+        "dont_visit_searched_leaves": False,
+        "travel_towards_unsearched": False,
+        "branch_direction": False,
+        "barrier_log": False,
+        "Y_cts": False,
+        "early_X_BP": False,
+        "Y_BP": False,
+        "high_prob_edges_BP": False
+    }
+    MIP(probType=UNIFORM,K=K,numEdges=numEdges, numNodes=numNodes, maxTime=maxTime, 
+        seed=seed, improvements=improvements)
 # SLow:
 # 4772197386045408510
 # 6726931912431499781
